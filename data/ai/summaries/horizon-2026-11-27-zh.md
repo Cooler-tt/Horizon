@@ -1,273 +1,317 @@
 # Horizon 每日速递 - 2026-11-27
 
-> 从 86 条内容中筛选出 12 条重要资讯。
+> 从 84 条内容中筛选出 14 条重要资讯。
 
 ---
 
 **AI 应用与 Agent**
-1. [腾讯开源 DFly2 投机解码](#item-ai-apps-1) ⭐️ 8.0/10
-2. [llama.cpp AMD 基准看板](#item-ai-apps-2) ⭐️ 7.0/10
-3. [20 个 Agent 调优查询引擎](#item-ai-apps-3) ⭐️ 6.0/10
-4. [Clay 把 GTM Agent 改成编码 Agent](#item-ai-apps-4) ⭐️ 6.0/10
-5. [GPT-6.2 计费修复，额度消耗加快](#item-ai-apps-5) ⭐️ 5.0/10
-6. [Sakana 发布 Namazu Small](#item-ai-apps-6) ⭐️ 5.0/10
-7. [微软公开 ARTEX 攻击架构](#item-ai-apps-7) ⭐️ 4.0/10
-8. [豆包工作接入剪映插件](#item-ai-apps-8) ⭐️ 4.0/10
+1. [腾讯开源 DFly2 复用稀疏 KV](#item-ai-apps-1) ⭐️ 7.0/10
+2. [Clay 重写 GTM Agent](#item-ai-apps-2) ⭐️ 7.0/10
+3. [豆包工作接入剪映插件](#item-ai-apps-3) ⭐️ 5.0/10
+4. [Namazu 30B 暂不可用](#item-ai-apps-4) ⭐️ 4.0/10
+5. [LTX-2.5 视频生成跑上 Trainium3](#item-ai-apps-5) ⭐️ 4.0/10
+6. [Android AI 小组件实测](#item-ai-apps-6) ⭐️ 4.0/10
 
 **科技新闻**
-1. [谷歌拟让 AI 代理使用其 MCP 服务器，Gmail 不能发信](#item-tech-news-1) ⭐️ 7.0/10
-2. [阿斯麦 CEO 反对对华全面断供光刻设备](#item-tech-news-2) ⭐️ 7.0/10
-3. [荷兰大臣反对美国 MATCH Act 限制 ASML 对华销售](#item-tech-news-3) ⭐️ 7.0/10
-4. [传智谱 GLM-5.5 与 Kimi K4 发布延期](#item-tech-news-4) ⭐️ 7.0/10
+1. [中情局等美国情报机构遭 AI 辅助攻击，涉开源工具 Artex](#item-tech-news-1) ⭐️ 8.0/10
+2. [购物网站疑现利用 WebRTC 的信用卡盗刷脚本](#item-tech-news-2) ⭐️ 7.0/10
+3. [离散对数问题出现确定性次指数时间算法预印本](#item-tech-news-3) ⭐️ 7.0/10
+4. [美国空军 Cloud One 云平台据报道遭黑客攻击](#item-tech-news-4) ⭐️ 7.0/10
+5. [蜜雪冰城 5 亿元入股 DeepSeek 千亿元级融资轮](#item-tech-news-5) ⭐️ 7.0/10
+6. [OpenSec 披露 Linux nfsd 9.8 分预认证漏洞](#item-tech-news-6) ⭐️ 7.0/10
+7. [《我的世界》基岩版资源包漏洞在 26.65 修复](#item-tech-news-7) ⭐️ 7.0/10
+
+**科技博客**
+1. [AI 检测之争实为决定权之争](#item-tech-blog-1) ⭐️ 7.0/10
 
 ---
 
 ## AI 应用与 Agent
 
 <a id="item-ai-apps-1"></a>
-### [腾讯开源 DFly2 投机解码](https://www.marktechpost.com/2026/11/26/tencent-dfly2-speculative-decoding-sparse-models/) ⭐️ 8.0/10
+### [腾讯开源 DFly2 复用稀疏 KV](https://www.marktechpost.com/2026/11/26/tencent-dfly2-speculative-decoding-sparse-models/) ⭐️ 7.0/10
 
-腾讯混元 AI Infra 团队开源了 DFly2：一种面向原生稀疏 LLM 的投机解码 drafter（草稿模型）。它的核心改动是 drafter 不再单独维护 KV cache，而是每个 draft 层绑定目标模型的一个稀疏注意力层，直接读取该层的 latent KV 和 indexer 已选出的 top-k 位置，并用目标层权重初始化。随腾讯自家 Hy4 flash 发布的版本为 0.85B 参数、5 层，官方称适配 DeepSeek-V4.1-Flash、GLM-5.3-Flash 和 Hy4 flash 三个目标模型。代码与配方在 GitHub 的 Tencent/AngelSpec 仓库和 vLLM recipe 页面（recipes.vllm.ai/tencent/Hy4-flash）可获取，论文编号 arXiv 2611.34776。所有吞吐与接受率数字均来自项目和论文自测，目前没有第三方复现。
+腾讯开源了 DFly2：一个 0.85B 参数、5 层的投机解码 drafter，已随 Hy4 flash 发布，代码在 Tencent/AngelSpec，目标模型包括 DeepSeek-V4.1-Flash、GLM-5.3-Flash 和 Hy4 flash。它的关键变化是 drafter 不再自建 KV cache，而是读取目标模型对应稀疏层的 latent KV 和 top-k 索引，因此每个 draft token 最多只关注约 2K 个 key。按论文自述，在 NVIDIA H20、vLLM、TP8 的测试中，DeepSeek-V4.1-Flash 的 SWE 64K 场景相对 DSpark 最高提升 81% 吞吐（匹配单用户速度），32K 上下文下同一显存池可容纳的请求数是原来的 1.73 倍。项目以开源代码和 vLLM recipe 形式提供，没有按 token 计价的公开价格信息；使用前提是目标模型本身采用原生稀疏注意力。
 
 rss · MarkTechPost · 11月27日 03:31
 
-**「怎么用」** 入口是 GitHub 的 Tencent/AngelSpec 仓库，drafter 权重随 Hy4 flash（HuggingFace tencent/Hy4-flash）一起发布，vLLM 侧有现成 recipe。接入时需要按论文把每个 draft 层与目标模型对应的稀疏层配对，共享 KV 与 indexer 选择结果，并把目标最后一层 hidden state 注入 draft block；官方强调 drafter 跳过 prefill，prefill 到 decode 只多传一个 last-layer hidden state。这不是 pip 装完即用的组件：要改 vLLM 的模型配置与注意力路径，作者自己的测试环境是 H20、TP8、单实例。
+**「怎么用」** 先确认要服务的模型在支持列表里（DeepSeek-V4.1-Flash、GLM-5.3-Flash、Hy4 flash），再从 GitHub 的 Tencent/AngelSpec 取 drafter，并按 recipes.vllm.ai/tencent/Hy4-flash 的 vLLM recipe 起服务。Hy4 flash 的 recipe 默认 8×H200，论文测试用的是 H20、vLLM、每实例 TP8；DFly2 不是可挂到任意稠密模型上的通用插件，换目标模型要重新确认对应稀疏层和索引器。
 
-**「成本与瓶颈」** 论文 Table 2 给出的对比是：常规 3 层 drafter 每 token 额外占 3.4 KiB（DeepSeek-V4.1-Flash，目标 KV 仅 4.4 KiB，涨到 1.76 倍）、3.0 KiB（GLM-5.3-Flash，1.26 倍）、3.4 KiB（Hy4 flash，1.20 倍）；去掉这块缓存后，32K 上下文下同一内存池能装 1.73 倍请求。每个 draft token 最多只注意约 2K 个 key，因此 draft 成本基本不随上下文长度增长。已知表现较差的情况是 Hy4 flash 通用任务、temperature 0：只比 DSpark 高 3.9%；官方称长上下文与 agentic 场景相对 DSpark 的领先为 10.0%–31.5%。
+**「成本与限制」** 项目本身开源，文中未给出 API 单价；成本主要落在 GPU 上：测试配置为单实例 8 张 H20（TP8），Hy4 flash 的 vLLM recipe 默认 8×H200。论文 Table 2 显示，传统 3 层 drafter 缓存会把每 token KV 总占用推到 1.76 倍（DeepSeek-V4.1-Flash）、1.26 倍（GLM-5.3-Flash）和 1.20 倍（Hy4 flash）；DFly2 去掉这块缓存后，32K 下同显存池可容纳的请求数是原来的 1.73 倍。已知边界是只对原生稀疏模型有效，且收益不均：Hy4 flash 通用任务在 temperature 0 时相对 DSpark 只有 3.9% 提升，以上均为论文或发布方数据。
 
-**「为什么现在看」** 投机解码在长上下文下一直受“draft 自己也要存全前缀 KV”拖累，DFly2 是用目标模型已有的稀疏选择结果把这个成本压平的新机制，不是旧方案换名；但收益仍停留在论文自测阶段，先按“值得在自己流量上验一遍”对待。
+**「为什么现在」** 现在值得关注的是它把 drafter 的 KV 内存从长上下文并发预算里拿掉，并给出了可下载代码和 vLLM recipe；但这不是通用加速，先看你的目标模型是否在三个支持列表内。
 
-**标签**: `#开源项目`, `#成本优化`, `#工具实测`, `#模型发布`
+**标签**: `#开源项目`, `#成本优化`, `#工具实测`, `#能力边界`
 
 ---
 
 <a id="item-ai-apps-2"></a>
-### [llama.cpp AMD 基准看板](https://huggingface.co/blog/ggml-org/llamacpp-amd-bench) ⭐️ 7.0/10
+### [Clay 重写 GTM Agent](https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/) ⭐️ 7.0/10
 
-Hugging Face 上出现了一个 llama.cpp 基准测试仪表盘，专门汇总 AMD Ryzen 处理器与 Radeon 显卡上的本地推理性能数据，目的是让人在挑硬件或调参前先看到可对比的实测结果。它本身不是新模型也不是新功能，而是一个数据汇集页面，任何在 AMD 平台上跑本地模型的人都能直接查阅。由于目前只有标题和简介可确认，页面的具体覆盖范围——收录了哪些模型、哪些量化格式（如 GGUF 的 Q4\_K\_M 一类）、测试用的是 prompt 处理还是 token 生成速度、样本量多少——都还没有核实，实际数字需要打开页面自行查看。
-
-rss · Hugging Face Blog · 11月26日 11:37
-
-**「怎么用」** 入口就是 Hugging Face 博客里的这个仪表盘页面，无需账号或付费，打开后按自己的 CPU/GPU 型号与想跑的模型规模去筛对应条目即可。想验证是否适用于自己的机器，最直接的办法是用 llama.cpp 自带的 benchmark 工具在本地跑一遍同样的模型与量化版本，再和看板上的数字对照。如果你还没装 llama.cpp，需要先从源码编译或走包管理器安装，AMD 显卡路径涉及对应的加速后端，具体编译选项以项目文档为准。
-
-**「为什么现在看」** 没有新能力，本质是把原本散落在论坛帖、个人博客和 issue 里的 AMD 本地推理测试数据集中成一个可对比的看板；价值在于省去自己搜零散数字的时间，但可信度取决于它的测试方法是否公开。
-
-**标签**: `#工具实测`, `#开源项目`, `#能力边界`
-
----
-
-<a id="item-ai-apps-3"></a>
-### [20 个 Agent 调优查询引擎](https://www.qbitai.com/2026/11/513163.html) ⭐️ 6.0/10
-
-据量子位报道，20 个 AI Agents 在 4 天里跑了 350 次实验，把 Quickwit 的查询总耗时降低 31%，单条查询最高降 87%，并称结果超过 ClickBench 最佳公开成绩。原文正文只有一句话，没有给出 Quickwit 的版本号、硬件配置、数据集规模、对比基线以及 Agent 的具体分工方式。因此，「超越 ClickBench 最佳公开成绩」目前只是报道方的说法，第三方无法据此复现或核实。对使用 Quickwit 做日志检索的人，这是一个值得跟进的方向，但还不是可以照抄的结论。
-
-rss · 量子位 QbitAI · 11月27日 03:53
-
-**「怎么上手」** 目前没有可执行路径：报道未提供 Agent 框架、提示词、评测脚本，也没有给出对 Quickwit 配置文件或查询计划的改动 diff。如果要在自己的场景中验证同样的思路，第一步是在 ClickBench 官方仓库找到对应的查询集和硬件口径，先用当前 Quickwit 版本跑一遍自己的基线耗时，再决定是否值得引入多 Agent 自动调优。
-
-**「成本与上限」** 官方博客和转载报道都没有给出支持这次 4 天 350 次实验的 API 费用或算力开销，因此无法估算单次优化尝试的成本。可以量化的是产出率：约 350 次实验中只有 6 项优化通过多智能体评审被保留，其余全部丢弃。收益也限定在同一批 hot query 上——总耗时 40.5 s 降到 27.9 s，hot geomean 0.403 s 降到 0.304 s，报道未说明换用其他数据集、冷查询或不同索引配置后是否仍然成立。
-
-**「为什么值得看」** 「多个 Agent 自动做性能调优」的案例正在变多，但决定它是否可用的关键是能否拿到改动内容和复现配置；这篇目前只给了结果数字，能力增量还有待验证。
-
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://www.besthub.dev/articles/20-ai-agents-autonomously-optimize-quickwit-beat-clickbench-sota-in-4-days-aa79b97b2079">20 AI Agents Autonomously Optimize Quickwit, Beat ClickBench ...</a></li>
-<li><a href="https://www.tabbyml.com/blog/beating-clickbench-sota-with-a-team-of-agentic-systems-engineers/">Beating ClickBench SOTA with a team of agentic systems ...</a></li>
-
-</ul>
-</details>
-
-**标签**: `#工具实测`, `#工作流`, `#能力边界`, `#成本优化`
-
----
-
-<a id="item-ai-apps-4"></a>
-### [Clay 把 GTM Agent 改成编码 Agent](https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/) ⭐️ 6.0/10
-
-Clay 的 AI 负责人 Jeff Barg 在访谈中说明，Sculptor agent 已从「工具循环」重写为跑在 Pi harness 上的编码 agent：在云沙箱里执行 Clay CLI，并新增 Audiences 数据层，把 CRM 与 Gong 记录按同一实体对齐，让 agent 能同时看到客户数据和活动结果。Clay 还在做按任务自动选模型的路由器，官方称「即将上线」，未给日期；手动模型选择器保留给代理机构和大客户。成本口径是访谈里的粗算：用 TypeSafe 的 Jev 对 Clay 库中约 4000 万家公司逐一做 ICP 分类约需 1500 美元，每条合格线索的 enrichment 预算 1-10 美元，每次成功预约通话 10-100 美元。
+Clay AI 负责人 Jeff Barg 在访谈中披露，其 GTM Agent「Sculptor」已从 2025 年 9 月那版基于 Sonnet 3.5 时代模型的工具循环，重写为跑在 Pi harness 上的 coding agent：在云沙箱里执行 Clay CLI，并靠新的 Audiences 数据层同时看到 CRM 与 Gong 记录。Clay 准备上线自动模型路由（尚未发布），还计划推出可自由调用 Clay 工具的沙箱 agent；Clay 已提供 Agent Plugin（CLI/API），让用户在 Claude Code 或 Codex 里直接调用 Clay。Jeff 给出的成本口径是：用 TypeSafe 的 Jev 分类器给 4000 万家公司跑一遍 ICP 匹配约 1500 美元（口算，Jev 尚未进生产）。
 
 rss · Latent Space · 11月26日 23:02
 
-**「最小路径」** 要复刻这条路径，从 Clay 的 CLI/API 入口开始：在 Claude Code 或 Codex 里接入 Clay Agent Plugin（CLI &amp; API），把候选公司表整表交给 agent 做批量筛选和 enrichment，而不是在 Clay UI 里逐行操作。Clay 内部 GTM 团队就是在 Cursor 里用这套 CLI 做准备，销售团队用 Codex。如果只需要判断「这家公司是否符合 ICP」，可以跳过 agent 链路，直接拿 LinkedIn 页面文本（约 1000 token）加 500 token 的 ICP 描述喂给分类器做二分类。
+**「怎么用」** 最小路径是使用 Clay 已提供的 Agent Plugin（CLI/API）：在 Claude Code 或 Codex 里接入 Clay CLI，让 agent 直接调用 enrichment、评分和表操作；如果不想离开 Clay UI，也可以直接用内置 agent。自动选模型的 router 还没上线，现阶段仍需按任务手动选模型。要复现 Jeff 的评分成本，可以把公司 LinkedIn 描述（约 1000 token）和 ICP（约 500 token）拼成一条分类请求。
 
-**「成本与上限」** Jeff Barg 的粗略估算（Jev 尚未进入生产）：把 Clay 库里约 4000 万家公司逐家对照 ICP 打一遍分，账单约 1500 美元；他给的获客基准是每条合格线索 1-10 美元、每次成功预约通话 10-100 美元。第三方会议记录称 Clay 每月跑 3.5 亿个 GTM agent，Jev 1.13 的公开定价是每百万输入 token 0.042 美元、输出 token 免费（2026 年 9 月 21 日查询）。已知的失败模式是“每行一个 agent”：有人对 5 万行表格发起运行时，推理需求会瞬间冲高，Clay 靠请求限流和供应商限速时的暂停/恢复兜住，Jeff 自己也不确定 BullMQ 能否再撑十倍增长。
+**「成本与限制」** Jeff 把合格线索的 enrichment 预算定在 1–10 美元/条、约访 10–100 美元/次；按 1500 美元覆盖 4000 万家公司折算，单家 ICP 分类不到 0.00004 美元。后训练的门槛被他说成 1000 万–1 亿美元推理支出，低于这个量级省下的钱不够抵消训练成本。已知的翻车点：一张 5 万行的表会让推理需求瞬间冲高，BullMQ 能否撑住 10 倍增长尚未可知，agent 仍会重复执行同一条 CLI 命令，也还不能可靠地读长 trace 来定位错误。
 
-**「实测与边界」** Barg 自述 Clay 内部用量已接近 50/50 分布在自有 agent 和外部 harness 之间，比他自己预期更偏外部工具；早期 Sculptor 擅长加列，但「约到十个合格会议」很差，且用 LLM 评判工具调用的 eval 漏掉了分析表格、百万行企业表这类真实用法。他还说 agent 目前读不懂长 trace，模型倾向把耗时最长的一步当成出错点，Clay 大量 skill 仍靠手写，模型也会用相同输入反复重试同一条 CLI 命令。以上均为作者（Clay AI 负责人）自述，无第三方评测。
+**「真实反馈」** Clay 方面称，内部 GTM 团队一直留在 Cursor，甚至要求公司提供 CLI，销售团队现在用 Codex 做 deal prep；Clay 内置 agent 与外部 harness 的使用量已接近 50/50，高于 Jeff 的预期。这些是公司方在访谈中的说法，没有第三方评测或客户评论佐证。
 
-**「为何现在看」** 现在值得看的是工程取舍，不是新能力：用编码 agent 替掉自建工具循环、用 BullMQ 加 Postgres/ClickHouse/Snowflake 而不引入 Temporal 或 LangGraph、以及「推理支出达到 1000 万至 1 亿美元量级才值得后训练」的门槛判断，都能直接对照自己的栈。
-
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://docs.typesafe.ai/models">Models - TypeSafe</a></li>
-<li><a href="https://www.typesafeai.org/guides/jev-pricing">Jev pricing, without the guesswork - TypeSafe ai</a></li>
-<li><a href="https://8thlight.com/insights/production-is-the-new-prototype-notes-from-langchain-interrupt-2026">8th Light | Agents Work. Now the Hard Part: Notes from LangChain</a></li>
-
-</ul>
-</details>
+**「为什么现在」** 现在值得关注的是：Clay 把 GTM agent 从工具循环迁到 coding agent 后的架构和成本口径；这次调整并非某个新模型发布——自动模型路由和沙箱 agent 都还没上线。
 
 **标签**: `#Agent框架`, `#成本优化`, `#工作流`, `#能力边界`
 
 ---
 
-<a id="item-ai-apps-5"></a>
-### [GPT-6.2 计费修复，额度消耗加快](https://www.techmeme.com/261126/p16#a261126p16) ⭐️ 5.0/10
+<a id="item-ai-apps-3"></a>
+### [豆包工作接入剪映插件](https://36kr.com/newsflashes/4087610228046208) ⭐️ 5.0/10
 
-OpenAI 承认 GPT-6.2 Astra 与 Sol 上线时的计费逻辑有错，把用量打了不该打的折扣；修复后，同样的工作量会吃掉更多套餐额度——Astra 用户触及上限的速度比修复前快 40%，Sol 快 25%。作为补偿，订阅用户获得一次额外的额度重置，商业/企业用户在今年年底前可免费使用 Fast Mode。OpenAI 同时表示正在测试把 Chat 与 Work 两种模式合并。报道没有给出受影响的具体套餐名单、修正后的 token 或消息计费率，也没有说明修复的具体生效日期，因此无法据此重算自己的月度成本。
+豆包工作宣布独家接入剪映官方插件，用户可把视频素材交给豆包工作，用一句话描述剪辑需求并调用剪映完成剪辑，之后还能继续通过对话修改，或打开多轨草稿手动细调。该消息以 36kr 快讯形式发布，属于官方宣布的接入能力，未公布上线区域、入口位置、是否需付费订阅，也没有披露素材规格上限、处理时长等限制条件。
 
-rss · Techmeme · 11月26日 13:01
+telegram · zaihuapd · 11月27日 07:45
 
-**「现在能做什么」** 先确认自己日常跑的是 Astra 还是 Sol：需要省额度的任务优先切到 Sol，它的消耗增幅是 25% 而不是 40%。订阅用户可以直接用掉这次额外重置，商业版用户在年底前把 Fast Mode 打开不会有额外计费。除此之外没有可改的配置项——这次是服务端计费口径的变更，客户端参数调不动它。
+**「怎么用」** 目前没有公开的入口说明，只能确认最小流程是三步：准备视频素材，在豆包工作里用一句话描述剪辑需求并触发剪映插件，然后在对话里继续修改，或导出到剪映多轨草稿细调。实际动手前需要先确认自己的豆包工作账号里是否已出现剪映插件入口，以及是否要求本机安装剪映客户端或绑定剪映账号，这两点在快讯中均未说明。
 
-**「配额与补偿」** 这次修正的是用量计费方式，并非调价：同样的工作量在 Astra 上会多消耗最多 40% 的套餐额度，在 Sol 上多消耗 25%，受影响的是付费 ChatGPT 订阅用户。作为补偿，订阅用户获得一次额外的用量重置，企业版用户到年底前可免费使用 Fast Mode。OpenAI 未公布按套餐划分的具体额度、新费率或生效日期，因此无法据此重算月度预算。
+**「为什么现在看」** 这是把对话式剪辑接到成熟剪辑器上的一次尝试：一句话出初剪结果，同时保留多轨草稿让人接手细调，比纯文本生成视频的工具更贴近真实剪辑流程，但目前只有厂商公告，尚无公开实测效果。
 
-**「为什么现在看」** 这不是新能力，而是把上周「便宜」的假象收回去：之前的低消耗是 bug，不是降价，所以本月剩余额度的消耗节奏会突然变快，而补偿（额外重置、免费 Fast Mode）带年底这个时间窗口。
+**标签**: `#工作流`, `#工具实测`, `#能力边界`
+
+---
+
+<a id="item-ai-apps-4"></a>
+### [Namazu 30B 暂不可用](https://www.marktechpost.com/2026/11/26/sakana-ai-namazu-small-30b-nemotron-3-nano/) ⭐️ 4.0/10
+
+Sakana AI 公布 Namazu Small：总参数 30B、激活 3B 的推理模型（图中标注 30B-A3B），从 NVIDIA Nemotron 3 Nano 的预训练基座出发，由 Sakana 自己做继续预训练和后训练，主打网页调研和长文档问答。官方自报在 25 个基准上平均 60.1，高于 Nemotron 3 Super（120B-A12B，56.2）和 Nemotron 3 Nano（50.2）；其中 BrowseComp 73.5（Super 为 36.1）、DeepSearchQA 84.3，但封闭式知识明显偏弱，SimpleQA Verified 仅 6.8（Nano 9.1、Super 18.1），日文 SimpleQA 8.0。以上全部为厂商自报成绩，未公布测试条件。关键是它现在用不了：权重未发布，许可证、上下文长度、硬件要求和价格均未披露，官方只说本地部署细节预计 2026 年 12 月公布。
+
+rss · MarkTechPost · 11月26日 22:06
+
+**「当前可行的路径」** Namazu Small 目前没有权重、没有 API、也没有等待名单入口，装不了任何东西。如果你的场景是「小激活参数 + 长文档 + 网页检索」，眼下能立刻动手的是它的基座：Nemotron 3 Nano 的权重在 Hugging Face 上开放（NVIDIA Nemotron Open Model License），30B 总参数 / 3B 激活，混合 Mamba-Transformer MoE，上下文最高 1M token，NVIDIA 标注适配 DGX Spark、H100、B200。想做本地部署的话，等 Sakana 12 月的本地部署说明再评估 Namazu Small 本身。
+
+**「成本与上限」** 官方未公布价格、许可证和上下文长度，权重也未发布，本地部署细节只称「预计 2026 年 12 月」公布，所以现在既买不到 API 也下载不了。第三方聚合站 ToolScout 和 LLM Stats 列出 Sakana AI API 输入价 0.95 美元/百万 token、最大上下文 262.1K，但没有说明这些数字是否适用于 Namazu Small，且与官方「未披露」的说法冲突，不能当作预算依据。作为参照，基座 Nemotron 3 Nano 官方标称上下文最高 1M token，硬件面向 DGX Spark、H100 和 B200。
+
+**「时机判断」** 现在不值得为它改工作流：这是一组没有第三方复现、也没有测试条件的自报分数，配套的权重、许可证、上下文长度和硬件门槛全部缺失，实际可做的最多是把它记进「12 月再看」的观察名单。
 
 <details><summary>参考链接</summary>
 <ul>
-<li>OpenAI Fixes Billing Error, Tightens Usage Limits on New Models</li>
-<li>&#x27;We&#x27;ve fixed this now, so the same work will use more of your plan&#x27;s usage allowance&#x27;: OpenAI admits it made a mistake when launching GPT-6.2 - TechRadar</li>
+<li>Sakana Namazu Models &amp; Pricing - ToolScout.ai</li>
+<li>Sakana AI: API Pricing, Performance &amp; Model Catalog - LLM Stats</li>
 
 </ul>
 </details>
 
-**标签**: `#成本优化`, `#模型发布`
+**标签**: `#模型发布`, `#能力边界`, `#工作流`
+
+---
+
+<a id="item-ai-apps-5"></a>
+### [LTX-2.5 视频生成跑上 Trainium3](https://huggingface.co/blog/video-trainium3) ⭐️ 4.0/10
+
+Hugging Face 博客在 2026 年 11 月 27 日发布了一篇题为《Taking Trainium3 to the Track: Generating Videos with LTX-2.5》的文章，主题是把 LTX-2.5 视频生成模型跑在 AWS 的 Trainium3 芯片上。目前能拿到的只有标题和来源，正文、模型权重信息、推理代码、生成样例和耗时数据都缺失，所以无法确认这是一次可复现的部署实践，还是只是演示。也正因如此，现在还判断不了这套组合对日常视频生成工作流是否真的可用、单位生成成本是否比 GPU 方案更低。在正文和样例放出之前，这条信息只适合当作线索记下，不适合据此做技术选型。
+
+rss · Hugging Face Blog · 11月27日 00:00
+
+**「成本与天花板」** LTX 官方定价页按模型、分辨率和 endpoint 类型以「每秒」计价；LTX 在 2026 年的成本指南里给出的区间是托管视频 API 约 0.03–0.70 美元/生成秒，其中 LTX-2.5 Fast 在 720p 带音频下起步 0.09 美元/秒。真正决定花多少钱的其实是重试次数，单价并不是主因：每个可用镜头平均要生成 3–10 次，一分钟成片在生成环节约 20–60 美元。LTX Studio 侧提供一次性 800 credits 的免费额度，可用于 LTX-2.5 与 LTX-2.3 视频模型；上述均为托管 API/产品价格，博客所涉的 Trainium3 自建路线未公布实例单价或吞吐数据。
+
+**「为什么现在看」** 标题指向的动作是把视频生成从 GPU 搬到自研 AI 芯片，但在这篇博客正文可见之前，没有证据表明它提供了「换硬件跑同一个模型」之外的新能力。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://docs.ltx.io/pricing">Pricing | LTX Documentation</a></li>
+<li><a href="https://ltx.io/blog/ai-video-generation-cost">How Much Does AI Video Generation Actually Cost? (2026 Guide)</a></li>
+<li><a href="https://ltx.io/studio/pricing">LTX Studio | Pricing</a></li>
+
+</ul>
+</details>
+
+**标签**: `#模型发布`, `#工作流`, `#工具实测`, `#能力边界`
 
 ---
 
 <a id="item-ai-apps-6"></a>
-### [Sakana 发布 Namazu Small](https://www.marktechpost.com/2026/11/26/sakana-ai-namazu-small-30b-nemotron-3-nano/) ⭐️ 5.0/10
+### [Android AI 小组件实测](https://www.theverge.com/tech/1041801/android-intelligence-create-my-widget-gemini) ⭐️ 4.0/10
 
-Sakana AI 在 11 月 26 日公布 Namazu Small，一个 30B 总参数、3B 激活（官方图表标注 30B-A3B）的推理模型：它从 NVIDIA Nemotron 3 Nano 的预训练基座（而非 NVIDIA 后训练版本）出发，由 Sakana 自行做继续预训练与后训练，主打网页搜索和长文档问答。Sakana 自报在 25 项基准上平均 60.1 分，高于 Nemotron 3 Super（120B-A12B，56.2）和 Nemotron 3 Nano（50.2），其中 BrowseComp 73.5 约为 Super 36.1 的两倍。但权重尚未发布，许可证、上下文长度、硬件要求和价格全部未披露，官方称本地部署细节要等到 2026 年 12 月，因此现在没有人能下载或调用它。
+Google 在今年春季 I/O 上宣布的 Create My Widget 功能，现已能在 Android 设备上实际使用：用 Gemini 生成自定义主屏幕小组件。The Verge 记者 Allison Johnson 在 Pixel 11 Pro 上做了上手测试，她最想要的是「家附近公交站实时到站」组件，但没能做出来；她随后成功制作了几个趣味型组件，体验不错。报道没有给出所用 Gemini 模型版本、入口路径、提示词示例或是否为灰度推送，因此无法判断普通用户现在打开手机是否就能用上。
 
-rss · MarkTechPost · 11月26日 22:06
+rss · The Verge - AI · 11月27日 14:00
 
-**「怎么用上」** 目前没有可安装的包、可调用的 API 或可下载的权重，唯一能做的是盯住 Sakana 的 Namazu Small 官方页面，等 12 月的权重与部署说明。如果现在就需要同量级能力，可以直接取 Hugging Face 上的 Nemotron 3 Nano 基座：30B-A3B 混合 Mamba-Transformer MoE，上下文最高 1M token，NVIDIA Nemotron Open Model License，NVIDIA 标注面向 DGX Spark、H100 和 B200。注意 Sakana 是在该基座的预训练版本上二次训练的，官方没有说明 Namazu Small 本身能否在这些硬件上跑起来。
+**「怎么用」** 报道确认这是 Android 系统内建功能，并且能在 Pixel 11 Pro 上运行，但它没有记录具体入口路径、提示词写法或生成步骤；这些是复现该功能所需的信息。文中的正面结果是「趣味型」组件，而涉及外部实时数据（公交到站）的需求没有被实现，说明可依赖生成边界暂时就到这里。想评估能不能用在自己场景的人，建议直接以你手上最依赖实时数据的那一个需求去试，而不是先做装饰性组件。
 
-**「成本与天花板」** 价格、许可证、上下文长度均未公开，无法给出任何单位成本估算。能力边界倒是给得比较清楚：闭卷知识是明显短板，SimpleQA Verified 只有 6.8（Nemotron 3 Nano 9.1、Super 18.1），日文 SimpleQA 8.0（Super 24.9），HealthBench 40.6 低于 Nano 的 47.5，Sakana 自己承认仅依赖内部知识的任务提升不大。基座 Nemotron 3 Nano 的上下文上限是 1M token，Namazu Small 是否保留这一长度未说明。
+**「实测反馈」** 这是记者本人的一手体验，并非第三方大规模实测：作者自述的失败点是实时公交到站组件未能生成，成功点是几个趣味小组件做得出来且过程愉快。文中没有其他用户样本，也没有效率或耗时数据。
 
-**「为什么现在看」** 值得记下的信号是“30B-A3B 加针对性后训练，在搜索与长文档任务上压过 120B 模型”这条路线，但所有分数均为 Sakana 自报、无第三方复现、也没有权重可验证，现阶段它只是信息，不是能上手的东西。
+**「为什么现在看」** 这个功能从春季 I/O 宣布到 11 月能在零售设备上跑，属于「宣布过的东西终于到手」而非新能力；真正的信息量在于它目前接不住实时数据类需求。
 
-**标签**: `#模型发布`, `#能力边界`, `#工具实测`
-
----
-
-<a id="item-ai-apps-7"></a>
-### [微软公开 ARTEX 攻击架构](https://the-decoder.com/microsoft-details-how-state-backed-hackers-use-the-artex-ai-framework-to-automate-cyberattacks/) ⭐️ 4.0/10
-
-微软公开了 ARTEX 的技术架构：这是一个自 2026 年 7 月起被广泛使用的 AI 框架，由多个专用 agent 分工跑完攻击流程，人工介入接近于零。微软称，中国和朝鲜背景的国家级组织以及犯罪团伙都已在用它。微软给出的防御方向是蜜罐、伪造成功信号这类欺骗手段，但对能自我学习调整的 agent 能撑多久，微软自己也没有给出答案。公开材料里没有 agent 的工具调用链、所用模型与参数、运行成本，也没有可写入检测规则的指标，因此读者目前无法据此修改任何配置。
-
-rss · The Decoder · 11月26日 11:30
-
-**「为什么现在看」** 这次真正新增的是「厂商首次公开架构」这一披露动作，并非新技术能力；这些能力自 2026 年 7 月起就已在被使用，而披露深度仍停留在概念层，不足以支撑防御动作。
-
-**标签**: `#Agent框架`, `#能力边界`, `#工作流`
-
----
-
-<a id="item-ai-apps-8"></a>
-### [豆包工作接入剪映插件](https://36kr.com/newsflashes/4087610228046208) ⭐️ 4.0/10
-
-豆包工作宣布「独家」接入剪映官方插件：用户把视频素材交给豆包工作，用一句话描述剪辑需求即可调用剪映完成剪辑，之后能继续用对话改，也可以打开多轨草稿手动细调。官方口径只到功能层面，未公布价格与计费方式、开放范围（全量还是灰度）、是否需要付费订阅、支持的剪映版本、单次可处理的素材时长与分辨率上限，也没有给延迟或成片效果数据。因此目前只能确认「宣布接入」，不能确认普通账号现在就能用上。
-
-telegram · zaihuapd · 11月27日 07:45
-
-**「怎么用上」** 入口在豆包工作内部，不是在剪映里：在豆包工作中选用剪映插件，上传素材，用一句话写清剪辑意图（例如时长、节奏、要保留的片段），生成后继续对话修改，或直接打开多轨草稿做时间线级调整。由于官方没说明灰度规则，能否看到这个插件入口取决于你的账号是否在放开范围内；看不到就是还没轮到，不是操作问题。
-
-**「为什么现在看」** 这更像入口整合，而非新能力：剪辑和对话改片的能力此前都已存在，变化只是把剪映作为官方插件接进豆包工作的对话流程，并允许回写多轨草稿；在开放范围和效果数据出来之前，它值不值得用主要取决于你的账号能不能真的调起这个插件。
-
-**标签**: `#工作流`, `#能力边界`
+**标签**: `#工具实测`, `#能力边界`, `#工作流`
 
 ---
 
 ## 科技新闻
 
 <a id="item-tech-news-1"></a>
-### [谷歌拟让 AI 代理使用其 MCP 服务器，Gmail 不能发信](https://techstackups.com/articles/google-workspace-ai-agents-mcp/) ⭐️ 7.0/10
+### [中情局等美国情报机构遭 AI 辅助攻击，涉开源工具 Artex](https://www.forbes.com/sites/the-wiretap/2026/11/25/us-government-under-ai-cyberattack) ⭐️ 8.0/10
 
-据这篇报道，谷歌计划通过 MCP 服务器让 AI 代理使用 Workspace 服务。报道同时指出，Gmail 的 MCP 集成不能发送邮件，这一限制及其原因引发讨论。该消息描述的是平台和 API 层面的接入安排，现有材料没有说明它是否已全面上线，也没有说明哪些账户可以使用。
+据《纽约时报》报道，美国中央情报局、国家地理空间情报局和国家情报总监办公室遭到黑客攻击，攻击过程中借助了名为 Artex 的 AI 工具。报道称此次攻击看起来不算严重，受影响的是非机密侦察数据。Artex 由一名中国开发者于今年早些时候发布，可整合多个开源 AI 模型来测试网络和计算机防御，此后被用于多起攻击，包括针对欧盟的一起，该开发者已将 Artex 从其 GitHub 账号删除。报道还提到，FBI 今年早些时候曾警告，网络罪犯和间谍正在广泛使用 Artex。
 
-hackernews · ritzaco · 11月26日 09:44 · [社区讨论](https://news.ycombinator.com/item?id=50653477)
+telegram · zaihuapd · 11月27日 10:42
 
-**「背景：MCP 与人工确认」** MCP（Model Context Protocol）是让 AI 代理以统一方式连接外部工具的开放协议；其 elicitation 机制允许服务器在工具调用无法继续时暂停流程，向用户请求确认或补充信息。Google 的 Workspace MCP 服务器文档则说明，Gmail 服务器会在代理执行发送等敏感操作前，通过 MCP 表单式 elicitation 触发由服务器驱动的人工确认。
+**「背景」** Artex 是一款整合多个开源 AI 模型、用于测试网络和计算机防御的开源工具，由中国开发者于今年早些时候发布。据 TechCrunch 报道，该工具被用于网络攻击后，开发者已将其转为闭源以阻止进一步滥用，但 FBI 表示此前的开源版本仍在流传且“可广泛获取”；另有报道称开发者于 10 月将主仓库从 GitHub 删除，然而开源副本依然扩散。FBI 此前已警告网络罪犯和间谍正在广泛使用 Artex，本次针对 CIA、国家地理空间情报局和国家情报总监办公室的攻击即是该工具扩散后的最新案例，影响限于非机密侦察数据。
 
-**「实际影响」** 评论者指出，需要让代理发送邮件的开发者可能转向浏览器自动化等绕行方案，而不是直接调用 MCP 工具，这会增加流程复杂度和资源开销。
-
-**「社区讨论」** 有评论者认为，Gmail 不能发信更像商业决策而非安全考虑，因为 MCP 的 elicitation 机制可以在发送前暂停工具调用并要求用户确认。也有人称 Gmail API 现已支持发送，认为文章信息可能已过时；另有评论认为，MCP 至少迫使谷歌补齐长期缺失的 Workspace API 能力，并预计想走全代理流程的用户会找到绕行办法。
+**「影响与限制」** 就目前披露的信息看，受损范围限于非机密侦察数据，报道未提及机密系统或人员数据受到影响。对防守方而言，该工具的原始 GitHub 仓库已被开发者删除，但报道未说明是否还存在其他分发渠道，因此 Artex 后续是否仍会被用于攻击尚无定论。
 
 <details><summary>参考链接</summary>
 <ul>
-<li><a href="https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server">Configure the Gmail MCP server | Google for Developers</a></li>
-<li><a href="https://developers.google.com/workspace/guides/configure-mcp-servers">Configure the Google Workspace MCP servers</a></li>
-<li><a href="https://www.langchain.com/blog/mcp-in-langchain-stateless-protocol-elicitation-and-more">MCP in LangChain: Stateless Protocol , Elicitation , and More!</a></li>
-<li><a href="https://dev.to/kachurun/mcp-elicitation-human-in-the-loop-for-mcp-servers-m6a">MCP Elicitation : Human -in-the-Loop for MCP... - DEV Community</a></li>
+<li><a href="https://kz.kursiv.media/en/2026-11-27/engk-yeri-ai-hacking-tool-artex-spreads-globally-despite-creators-takedown/">FBI warns of AI hacking tool ARTEX as open - source copies proliferate</a></li>
+<li><a href="https://techcrunch.com/2026/11/16/fbi-says-artex-ai-open-source-hacking-tool-used-to-breach-networks-in-under-three-hours/">FBI says Artex AI open source hacking tool used to... | TechCrunch</a></li>
 
 </ul>
 </details>
 
-**标签**: `#Model Context Protocol`, `#Google Workspace`, `#AI agents`, `#API design`, `#platform policy`
+**标签**: `#AI security`, `#cybersecurity`, `#government intelligence`, `#open-source AI`, `#cyberattacks`
 
 ---
 
 <a id="item-tech-news-2"></a>
-### [阿斯麦 CEO 反对对华全面断供光刻设备](https://www.semafor.com/article/11/25/2026/asml-makes-the-case-for-selling-chips-to-china) ⭐️ 7.0/10
+### [购物网站疑现利用 WebRTC 的信用卡盗刷脚本](https://www.infohawk.com/news/2026-11-27-black-friday-webrtc-skimmer) ⭐️ 7.0/10
 
-阿斯麦 CEO 富凯在 Semafor《Future Proof》节目中表示，出口管制应保护最先进的技术，但不该把中国完全排除在外；全面断供只会促使中国在自研上“加倍甚至三倍投入”。他称，阿斯麦卖给中国的设备落后最先进制程十多年，维持这一代差反而让中国继续依赖西方设备；近 30 年来，阿斯麦在中国光刻机市场的份额接近 100%。美国正推动 MATCH 法案，拟把管制范围从 EUV 扩大到浸没式 DUV 和维护服务，荷兰政府和阿斯麦均表示反对。
+据 Infohawk 报道，一些热门购物网站被发现存在疑似利用 WebRTC 窃取信用卡数据的盗刷脚本，目标指向电商结账流程中的支付信息。该报道目前只有标题，未提供受影响网站、脚本数量、攻击者归属或实际盗刷规模，因此相关说法尚无法独立核实。现有讨论更关注攻击面：问题未必在 WebRTC 本身，而在于它较少被安全监控；一旦第三方脚本被嵌入商店页面，这类脚本就具备数据外传能力。
 
-telegram · zaihuapd · 11月26日 12:19
+hackernews · scanr · 11月27日 15:40 · [社区讨论](https://news.ycombinator.com/item?id=50668145)
 
-**「背景：EUV 管制与 MATCH 法案的边界」** 光刻机是芯片制造的核心设备，阿斯麦在先进光刻机上占据主导地位：EUV 用于最先进制程，早已被纳入对华出口管制；而浸没式 DUV 主要服务成熟制程，此前仍在许可销售范围内。美国推动的 MATCH 法案争议点正在于此——是否把管制从 EUV 进一步延伸到浸没式 DUV 设备及其维护服务。
+**「背景」** WebRTC 是浏览器内置的实时通信接口，除音视频通话外也能在网页中建立数据连接。电商页面若嵌入第三方脚本，被攻陷的脚本就可能在用户浏览器中读取支付表单，并借 WebRTC 等通道把数据外传；这是此类信用卡侧录（skimming）攻击能够发生的前提。
 
-**「对在华晶圆厂的影响」** 若美国推动的 MATCH 法案将管制从 EUV 扩大到浸没式 DUV 及维护服务，中国境内依赖阿斯麦 DUV 设备的晶圆厂将同时面临新机采购受限，以及已装机台服务和技术支持中断的风险，扩产与现有产线维护都会受到直接影响。相关企业需提前评估备件与服务替代方案；该法案目前仍是提案，荷兰政府和阿斯麦均已表示反对。
+**「影响」** 对在结账页嵌入第三方脚本的电商运营者和 Web 工程师而言，需要把 WebRTC 这类较少被监控的出站通道纳入支付页脚本审计；目前缺少样本和细节，尚无法判断常见的 iframe 隔离或脚本监控能否拦住该手法。
 
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://www.thedefensenews.com/US-Pushes-Bill-to-Compel-Netherlands-to-Halt-Remaining-ASML-Machine-Sales-and-Service-to-China/">US Pushes Bill to Compel Netherlands to Halt Remaining ASML ...</a></li>
-<li><a href="https://techwireasia.com/2026/04/match-act-semiconductor-export-controls-china-asia/">The MATCH Act Wants to Cut Off China&#x27;s Last Semiconductor ...</a></li>
+**「社区讨论」** 评论者普遍认为，真正的风险来自商店页面嵌入第三方脚本，而非 WebRTC 的技术能力本身；afavour 指出该通道只是较少被监控，同样的外传也可用普通 HTTP 请求完成，kragen 则提到浏览器对 iframe 外传的限制并不覆盖 WebRTC。另有评论者把广告拦截视为合理的自我保护，并质疑为何在已有多种外传途径时攻击者还要改用 WebRTC。
 
-</ul>
-</details>
-
-**标签**: `#semiconductor-export-controls`, `#ASML`, `#China-chip-industry`, `#lithography`, `#tech-policy`
+**标签**: `#web security`, `#credit-card skimming`, `#WebRTC`, `#third-party scripts`, `#e-commerce`
 
 ---
 
 <a id="item-tech-news-3"></a>
-### [荷兰大臣反对美国 MATCH Act 限制 ASML 对华销售](https://www.bloomberg.com/news/articles/2026-11-26/netherlands-plans-to-fight-rollout-of-proposed-us-curbs-on-asml) ⭐️ 7.0/10
+### [离散对数问题出现确定性次指数时间算法预印本](https://eprint.iacr.org/2026/3020.pdf) ⭐️ 7.0/10
 
-荷兰外贸与发展合作大臣 Sjoerd Sjoerdsma 11 月 26 日在议会表示，荷兰不会接受美国进一步限制 ASML 对华销售，并反对 MATCH Act 的域外管辖效力。荷兰正与欧盟委员会协调，并联合德国、法国游说，争取将该法案从美国年度国防政策法案中剔除。MATCH Act 由美国两党共同提出，要求荷兰、日本等盟友实施更严格的对华出口管制，否则美方将单方面限制其半导体设备；中国约占 ASML 今年销售额的 20%，外界预计美国国会 12 月中旬表决，通过可能性很大。
+一篇发布在 IACR ePrint 的预印本（编号 2026/3020）提出了求解离散对数问题（DLP）的确定性次指数时间算法。据摘要中的讨论介绍，该算法的时间复杂度为 2^O\(b/\(log log b\)\)，其中 b 为密钥长度。该结果仍属理论层面；社区分析认为它对现实中的密码系统影响有限：目前实践中最快的方法是 BSGS，其复杂度约为 2^\{b/2+o\(b\)\}，而新算法中增长极慢的 log log b 项意味着它只会在密钥规模大得离谱时才可能胜过 BSGS。
 
-telegram · zaihuapd · 11月26日 14:56
+hackernews · yuvadam · 11月27日 12:08 · [社区讨论](https://news.ycombinator.com/item?id=50665968)
 
-**「背景：MATCH Act 的域外机制与立法载体」** MATCH Act 由美国两党共同提出，其核心机制是把美国的出口管制延伸到盟友：要求荷兰、日本等国家对华实施更严格的半导体设备出口限制，否则美方将单方面限制这些国家的设备出口。该法案被搭载进美国年度国防政策立法审议，这也解释了荷兰为何选择与欧盟委员会协调、联合德国和法国游说，把相关条款从这部国防法案中剔除，而不是去否决一部独立的专门法案。
+**「背景」** 离散对数的亚指数时间算法并非首次出现：IACR 新闻条目（2026 年 11 月 27 日）回顾称，在 2026 年 10 月对指数时间假设（ETH）的推翻之后，Akshima 等（2026）和 Kaarelson（2026）已给出素域椭圆曲线离散对数的 Las Vegas 亚指数算法，但确定性的 p^\{o\(1\)\} 离散对数算法仍是公开问题。该预印本把确定性算法建立在 OpenAI 2026 年 10 月的 Cauchy–Hermite 布尔张量收缩构造这一假设之上。
 
-**「影响」** 若法案按现文本通过，美国可能绕过荷兰出口许可制度，单方面限制 ASML 对华设备销售；中国市场约占 ASML 今年销售额的 20%，相关限制将直接压缩这部分业务。当前的关键节点是荷兰在 12 月中旬美国国会表决前，能否通过欧盟及德法协调将相关条款从国防政策法案中移除。
+**「实际影响」** 这一结果不改变现有协议的安全参数估计，也不提示需要迁移或停用 RSA、Ed25519 等部署中的方案；讨论者明确表示，已使用的密码协议几乎不会受到实际影响。对算法与密码学研究者而言，值得关注的是它给出了确定性算法的构造思路，而非可直接用于攻击的参数。
 
-**标签**: `#ASML`, `#export controls`, `#semiconductors`, `#Netherlands`, `#US-China tech policy`
-
----
-
-<a id="item-tech-news-4"></a>
-### [传智谱 GLM-5.5 与 Kimi K4 发布延期](https://www.reuters.com/world/china/us-chip-curbs-distillation-crackdown-threaten-chinese-ai-model-development-2026-11-26/) ⭐️ 7.0/10
-
-据 Telegram 频道转述路透社报道，智谱原计划在 2026 年 11 月发布参数规模约 3 万亿的旗舰模型 GLM-5.5，但受反蒸馏防护措施和算力限制等因素影响，发布时间可能推迟至 2027 年第一季度或更晚；月之暗面的下一代旗舰 Kimi K4 也可能推迟至 2027 年年中。报道还称，月之暗面内部预计，若完全失去海外算力，其重大版本发布间隔将从 6 个月拉长到一年以上；同时，Anthropic 与 OpenAI 的反蒸馏措施使其获取训练数据更困难，该公司已转向蒸馏谷歌和 Meta 的模型。上述说法来自简短转述，网传朋友圈截图显示智谱方面对此否认，相关延期尚未获得独立证实。
-
-telegram · zaihuapd · 11月26日 15:14
-
-**「背景」** 所谓蒸馏，通常指用能力更强的模型的输出作为训练数据，以较低成本提升自有模型；Anthropic 此前指控中国 AI 实验室通过大量 Claude 交互实施违规蒸馏，其中阿里巴巴相关活动在 5 月至 7 月涉及逾 1.51 亿次交互。彭博社 2026 年 11 月 25 日还报道，美国新的芯片限制已令涉及字节跳动、阿里巴巴和腾讯的数十亿美元亚洲数据中心贷款受阻，显示算力获取正同步收紧。
-
-**「对开发者的影响」** 对依赖智谱和月之暗面旗舰模型 API 的开发者而言，最直接的后果是升级与兼容规划可能被拉长：GLM-5.5 尚未发布并可能推迟到 2027 年第一季度或更晚，而月之暗面内部预计，若失去海外算力，重大版本间隔会从 6 个月拉长到一年以上，Kimi K4 可能推迟到 2027 年中。因此，基于现有版本构建的产品需要预留更长的支持周期；不过智谱已否认相关说法，延期仍属未经独立证实的报道。
+**「社区讨论」** 评论者 pcstl 与 layer8 都认为该算法没有实际密码学后果，并指出随机化的次指数时间离散对数算法已为人知近 50 年。cperciva 补充说，整数分解算法几乎总能对应到素域离散对数问题，因此这个算法的出现并不令人意外；stabbles 则提出一个假设性问题：在无法判断 RSA 还是 Ed25519 被削弱时，是否应要求同时使用两种密钥，并指出 GitHub 等场景下双密钥的实际强度取决于较弱的一方。
 
 <details><summary>参考链接</summary>
 <ul>
-<li><a href="https://www.bloomberg.com/news/articles/2026-11-25/billions-in-data-center-deals-grind-to-halt-after-ai-chip-curbs">US AI Chip Curbs Stall Billions in Asia Data Center Loans... - Bloomberg</a></li>
-<li><a href="https://qz.com/anthropic-chinese-ai-labs-distillation-alibaba-deepseek-moonshot-091126">Anthropic accuses Chinese AI labs of illicit distillation attacks</a></li>
-<li>EXCLUSIVE: US chip curbs, distillation crackdown threaten Chinese AI model development, sources say | Reuters</li>
-<li>Nov 26 (Reuters) - China&#x27;s Z.AI has fallen behind schedule on its next flagship AI model ... - Facebook</li>
+<li><a href="https://eprint.iacr.org/2026/3020">A Deterministic Subexponential-time Algorithm for the ...</a></li>
+<li><a href="https://iacr.org/news/item/30694">IACR News item: 27 November 2026</a></li>
 
 </ul>
 </details>
 
-**标签**: `#AI models`, `#China AI`, `#distillation`, `#compute constraints`, `#industry news`
+**标签**: `#discrete logarithm`, `#cryptography`, `#algorithms`, `#theoretical computer science`
+
+---
+
+<a id="item-tech-news-4"></a>
+### [美国空军 Cloud One 云平台据报道遭黑客攻击](https://news.sky.com/story/us-air-forces-cloud-computing-platform-hacked-13617163) ⭐️ 7.0/10
+
+据天空新闻报道，美国空军 Cloud One 云平台遭到黑客攻击。该平台整合了微软、亚马逊、Oracle 和 Alphabet 的基础设施，承载人事薪酬、后勤维护等大量应用。报道未提供攻击手法、入侵范围或数据是否泄露等技术细节，因此目前只能确认这是一起被报道的事件，尚不能视为已独立核实的完整结论。
+
+hackernews · freakynit · 11月27日 12:54 · [社区讨论](https://news.ycombinator.com/item?id=50666375)
+
+**「背景」** Cloud One 是美国空军把 Microsoft、Amazon、Oracle 和 Alphabet 四家云基础设施整合起来的旗舰平台，用于承载大量应用。Sky News 称其是美国军方最大的云平台之一，知情消息源把此次入侵形容为“一个大问题”，但公开报道暂未披露攻击的技术细节。
+
+**「社区讨论」** 评论区的核心争论是 Cloud One 这类多供应商云架构是否值得：有评论者质疑四家运营商及分包商带来的复杂访问面，主张建立内部 DevOps 团队；另一名自称工作依赖该平台的用户则报告，过去一个月基础设施重建和严格访问限制已造成明显中断。也有评论借早期政府机构物理隔离电脑的经历，主张对敏感系统采取更严格的控制。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://news.sky.com/story/us-air-forces-cloud-computing-platform-hacked-13617163">US Air Force &#x27;s cloud computing platform hacked | Sky News</a></li>
+
+</ul>
+</details>
+
+**标签**: `#cybersecurity`, `#cloud computing`, `#government IT`, `#multi-cloud`, `#incident response`
+
+---
+
+<a id="item-tech-news-5"></a>
+### [蜜雪冰城 5 亿元入股 DeepSeek 千亿元级融资轮](https://m.sohu.com/a/1107027659_115479) ⭐️ 7.0/10
+
+据搜狐网报道，DeepSeek 已完成第二轮融资，规模在 1000 亿至 1055 亿元人民币之间，投后估值约 6155 亿元；本轮新增 31 家出资人，腾讯、宁德时代、中国移动、vivo 均在列。蜜雪冰城股份有限公司认缴 5 亿元，这笔资金通过天津砺思星深基金投入，该基金由砺思资本管理，备案时募得 26.4 亿元，后扩募至 75.2 亿元关账。报道称该基金由此创下今年市场化人民币 VC 盲池基金最大募资纪录；蜜雪集团 2025 年营收 335.6 亿元、归母净利约 58.9 亿元，5 亿元认缴额相对其体量有限。上述融资规模、估值与出资人名单均出自这一二手报道，未见 DeepSeek 或投资方的公开确认。
+
+telegram · zaihuapd · 11月27日 06:33
+
+**「背景」** DeepSeek 的融资此前已有阶段性披露：IT 之家援引《The Information》称，公司今年 6 月完成约 510 亿元人民币首轮融资，第二轮融资目标最初设为 500 亿元、后上调至约 1000 亿元；10 月底的报道又称该轮募资约 150 亿美元（约合 1001.53 亿元人民币），腾讯和宁德时代继续参与。此次报道中的约 1000 亿至 1055 亿元规模及 31 家新增出资人，可视为同一轮融资在规模和名单上的进一步具体化。
+
+**「影响」** 蜜雪的 5 亿元是经砺思资本管理的天津砺思星深基金投入 DeepSeek，属于基金层面的财务出资，目前没有披露门店、供应链或模型授权方面的业务合作；因此开发者和企业客户不宜把股东名单当作产品接入或合作背书。砺思资本在 DeepSeek 新一轮中继续获得投资份额，开润股份等消费企业也通过其天津基金出资，显示这类消费龙头入股更接近借助专业基金获取 AI 资产敞口。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://www.ithome.com/1/020/251.htm">曝 DeepSeek 第二轮 融 资 1055 亿 元 ： 估 值 6155 亿 元 ，vivo...</a></li>
+<li><a href="https://m.zhibo8.com/news/web/game/2026-10-31/6ae5662e6dfe9native.htm">估 值 6155 亿 元 ！ 曝 DeepSeek 第二轮 融 资 1055...</a></li>
+<li><a href="https://www.cls.cn/detail/2525279">75.2亿元、40名LP， 砺 思 又拿到了 DeepSeek 投 资 份额</a></li>
+<li><a href="https://news.qq.com/rain/a/20260729A0AT4900">传统消费龙头向AI“集体叛逃”：卖保健品的 投 DeepSeek ...</a></li>
+
+</ul>
+</details>
+
+**标签**: `#DeepSeek`, `#AI funding`, `#China AI`, `#venture capital`, `#industry news`
+
+---
+
+<a id="item-tech-news-6"></a>
+### [OpenSec 披露 Linux nfsd 9.8 分预认证漏洞](https://opensec.in/blog/nfs2root-cve-2026-99362) ⭐️ 7.0/10
+
+据一则 Telegram 帖转述，OpenSec 披露 Linux 内核 NFS 服务器 nfsd 的预认证堆溢出漏洞 CVE-2026-99362，CVSS 评分 9.8；攻击者无需登录，只需向 tcp/2049 发起连接即可越界写入内核堆，并可能取得 root shell。帖文称该漏洞自 2014 年的 Linux 3.16 起存在，影响启用 NFSv4.1 或 4.2 的文件服务器、NAS 和集群存储节点，修复版本为 6.12.117、6.18.61、7.3.2 和 7.4-rc1，升级后需重启内核。CVE 据称于 2026 年 11 月 20 日公开；上述编号、影响范围和利用后果均来自单一聚合来源，尚未在供给内容中获得独立核实。
+
+telegram · zaihuapd · 11月27日 12:57
+
+**「背景」** 该漏洞位于内核态 NFS 服务端 nfsd 处理 NFSv4.1/4.2 会话 SEQUENCE 回复的路径；NVD 对修复的描述是“在接收槽位前预检 SEQUENCE 回复”。Red Hat 指出，默认 RHEL 配置并不运行或启用 nfsd，因此只有专门配置并导出 NFSv4.1/4.2 共享的系统才处于该攻击面内。
+
+**「影响」** 运行受影响 NFSv4.1/4.2 服务的文件服务器、NAS 和集群节点在修补前仍暴露于未认证远程攻击；帖文给出的处置是升级内核并重启，无法立即升级时以防火墙限制 tcp/2049 作为临时缓解。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://access.redhat.com/security/cve/cve-2026-99362">CVE-2026-99362 - Red Hat Customer Portal</a></li>
+<li><a href="https://app.opencve.io/cve/CVE-2026-99362">CVE-2026-99362 - Vulnerability Details - OpenCVE</a></li>
+<li><a href="https://nvd.nist.gov/vuln/detail/cve-2026-99362">NVD-CVE-2026-99362</a></li>
+
+</ul>
+</details>
+
+**标签**: `#Linux kernel`, `#NFS`, `#vulnerability`, `#security`, `#CVE`
+
+---
+
+<a id="item-tech-news-7"></a>
+### [《我的世界》基岩版资源包漏洞在 26.65 修复](https://www.zaikei.co.jp/article/20261119/878386.html) ⭐️ 7.0/10
+
+《我的世界》基岩版存在一个资源包漏洞，影响 26.52 至 26.63 版本。带有 content.zipe 文件的资源包可以改动游戏界面框架 Ore UI 的文件并运行隐藏脚本。附加组件开发者 8Crafter 于 11 月 15 日在 Reddit 公开该问题，称已确认影响 PC、手机和主机，Java 版不受影响，更早版本也可能受影响。加入服务器或 Realm 时若开启资源包自动下载，玩家无需手动安装就可能收到问题文件；8Crafter 列举的利用方式包括删除全部存档、获取玩家 IP，以及在 Windows 上特定条件下无提示打开任意 URI 并启动资源包内的批处理文件下载恶意软件。Mojang 已在 26.65 版修复；AxmBro 发布的 Windows 只读检测工具可查找 content.zipe，但不能判定资源包是否恶意。
+
+telegram · zaihuapd · 11月27日 18:04
+
+**「背景」** 基岩版允许服务器或 Realm 向加入的玩家下发资源包，若客户端开启自动下载，就会直接接收并加载这些文件。此次问题的关键在于资源包内的 content.zipe 能改动界面框架 Ore UI 的文件，使原本的资源加载路径变成隐藏脚本的执行路径。
+
+**「影响与处置」** 开启资源包自动下载的玩家在加入服务器或 Realm 时，可能在未手动安装的情况下收到含 content.zipe 的问题资源包，从而暴露于删除存档、获取 IP 等风险；Windows 上还存在无提示打开任意 URI、启动批处理文件下载恶意软件的条件性利用路径。玩家和服务器运营者应升级到已修复的 26.65 版；AxmBro 的 Windows 只读检测工具只能查找 content.zipe，无法判定资源包是否恶意，不能作为唯一防护手段。
+
+**标签**: `#Minecraft Bedrock`, `#security vulnerability`, `#resource packs`, `#Mojang`, `#patching`
+
+---
+
+## 科技博客
+
+<a id="item-tech-blog-1"></a>
+### [AI 检测之争实为决定权之争](https://seangoedecke.com/who-gets-to-decide-if-something-is-written-by-ai/) ⭐️ 7.0/10
+
+rss · Sean Goedecke · 11月27日 00:00
+
+**「背景」** 围绕作品是否由 AI 生成的争议几乎每天都在发生：获奖小说被指 AI 代写、作者因手稿被 Pangram 标记而失去合同、推文 authorship 引发争吵。Sean Goedecke 认为，检测工具是否可靠、该不该扫描他人作品只是表层问题，真正的冲突在于谁有权裁决。
+
+**「方案」** Goedecke 先替反检测者给出最强辩护：他们真正忌惮的是科技行业获得界定公共言论的权力；过去几十年从社区判断转向可量化、可审计的自动化流程，也让许多人反感，因此再用一个 AI 工具治理 AI 被视作荒诞。作者的反驳落在替代方案上：若不靠检测工具，就只能依赖文学奖委员会、社群舆论等自我 policing；但不用 AI 的人并不擅长识别 AI 文本，推文上既有把明显 AI 痕迹判为人类，也有把长而礼貌的人类文本误判为 AI。更根本的是，调查和草稿等证据无法可靠证明清白，因为熟练的 AI 写作可以伪造创作过程。于是他主张，若真在意守住人类艺术与文化空间，就该使用最强检测工具，或推动开源、政府自建平台，而不是交给社区裁决；他也承认误报恐惧和工具整体不可靠是合理担忧，并链接了对 Pangram 可靠性的辩护。文章主要是论证与轶事证据，若干关键判断仍属作者主张而非实测结论。
+
+**「启示」** 作者的结论是：AI 检测争议的核心不是工具是否完美，而是谁获得把关权；拒绝工具等于把裁决交给更不擅长的社区，因此应把检测能力建设成公开、可问责的基础设施。
+
+**标签**: `#AI detection`, `#power and institutions`, `#community moderation`, `#trust and verification`, `#AI policy`
 
 ---
 
