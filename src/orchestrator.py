@@ -1,6 +1,7 @@
 """Main orchestrator coordinating the entire workflow."""
 
 import asyncio
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -341,17 +342,24 @@ class HorizonOrchestrator:
                 try:
                     from pathlib import Path
 
-                    post_filename = f"{today}-summary-{lang}.md"
+                    # 频道后缀：多个 workflow 同一天跑时靠它避免文件名撞车
+                    post_slug = os.getenv("HORIZON_POST_SLUG", "").strip()
+                    slug_part = f"-{post_slug}" if post_slug else ""
+                    post_filename = f"{today}{slug_part}-summary-{lang}.md"
                     posts_dir = Path("docs/_posts")
                     posts_dir.mkdir(parents=True, exist_ok=True)
 
                     dest_path = safe_output_path(posts_dir, post_filename)
 
+                    # 标题前缀：让首页列表能区分 BTC / AI 频道
+                    title_prefix = os.getenv("HORIZON_POST_TITLE", "").strip()
+                    title_prefix = f"{title_prefix} " if title_prefix else ""
+
                     # Add Jekyll front matter
                     front_matter = (
                         "---\n"
                         "layout: default\n"
-                        f"title: \"Horizon Summary: {today} ({lang.upper()})\"\n"
+                        f"title: \"{title_prefix}Horizon Summary: {today} ({lang.upper()})\"\n"
                         f"date: {today}\n"
                         f"lang: {lang}\n"
                         "---\n\n"
