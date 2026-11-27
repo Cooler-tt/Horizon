@@ -5,251 +5,269 @@
 ---
 
 **AI 应用与 Agent**
-1. [腾讯开源 DFly2 投机解码](#item-ai-apps-1) ⭐️ 7.0/10
-2. [Clay 把 GTM Agent 改成 coding agent](#item-ai-apps-2) ⭐️ 7.0/10
-3. [GPT-6.2 额度缩水 40%](#item-ai-apps-3) ⭐️ 5.0/10
-4. [Sakana 发布 Namazu Small](#item-ai-apps-4) ⭐️ 5.0/10
-5. [Google Play 将公开商家地址](#item-ai-apps-5) ⭐️ 5.0/10
+1. [腾讯开源 DFly2 投机解码](#item-ai-apps-1) ⭐️ 8.0/10
+2. [llama.cpp AMD 基准看板](#item-ai-apps-2) ⭐️ 7.0/10
+3. [20 个 Agent 调优查询引擎](#item-ai-apps-3) ⭐️ 6.0/10
+4. [Clay 把 GTM Agent 改成编码 Agent](#item-ai-apps-4) ⭐️ 6.0/10
+5. [GPT-6.2 计费修复，额度消耗加快](#item-ai-apps-5) ⭐️ 5.0/10
+6. [Sakana 发布 Namazu Small](#item-ai-apps-6) ⭐️ 5.0/10
+7. [微软公开 ARTEX 攻击架构](#item-ai-apps-7) ⭐️ 4.0/10
+8. [豆包工作接入剪映插件](#item-ai-apps-8) ⭐️ 4.0/10
 
 **科技新闻**
-1. [Google Workspace MCP 服务器因 Gmail 发送限制受质疑](#item-tech-news-1) ⭐️ 7.0/10
-2. [黑五硬盘价格大涨，AI 存储需求挤压供应](#item-tech-news-2) ⭐️ 7.0/10
-3. [阿斯麦 CEO 反对全面断供，主张维持技术代差](#item-tech-news-3) ⭐️ 7.0/10
-4. [荷兰大臣反对美国 MATCH 法案限制 ASML 对华销售](#item-tech-news-4) ⭐️ 7.0/10
-5. [纳德拉承认微软应届生招聘放缓，称企业先耗尽 AI 预算再增人手](#item-tech-news-5) ⭐️ 7.0/10
-6. [蜜雪冰城 5 亿元入股 DeepSeek 千亿元级融资](#item-tech-news-6) ⭐️ 7.0/10
-
-**科技博客**
-1. [AI 检测之争，本质是把关权之争](#item-tech-blog-1) ⭐️ 8.0/10
+1. [谷歌拟让 AI 代理使用其 MCP 服务器，Gmail 不能发信](#item-tech-news-1) ⭐️ 7.0/10
+2. [阿斯麦 CEO 反对对华全面断供光刻设备](#item-tech-news-2) ⭐️ 7.0/10
+3. [荷兰大臣反对美国 MATCH Act 限制 ASML 对华销售](#item-tech-news-3) ⭐️ 7.0/10
+4. [传智谱 GLM-5.5 与 Kimi K4 发布延期](#item-tech-news-4) ⭐️ 7.0/10
 
 ---
 
 ## AI 应用与 Agent
 
 <a id="item-ai-apps-1"></a>
-### [腾讯开源 DFly2 投机解码](https://www.marktechpost.com/2026/11/26/tencent-dfly2-speculative-decoding-sparse-models/) ⭐️ 7.0/10
+### [腾讯开源 DFly2 投机解码](https://www.marktechpost.com/2026/11/26/tencent-dfly2-speculative-decoding-sparse-models/) ⭐️ 8.0/10
 
-腾讯 Hunyuan AI Infra 团队开源了 DFly2：这是一个 0.85B 参数、5 层的投机解码 drafter，随 Hy4 flash 一起发布，代码在 GitHub 的 Tencent/AngelSpec 仓库，论文为 arXiv 2611.34776。它的核心做法是不保留自己的 KV cache：每个 draft 层读取目标模型对应稀疏注意力层的 latent KV，并且只在目标 indexer 已选出的 top-k 位置上做注意力。因此单个 draft token 最多 attend 约 2K 个 key，drafting 开销基本不随上下文长度增长，也完全跳过 prefill，只从目标模型多传 1 个 last-layer hidden state。官方论文称，在 DeepSeek-V4.1-Flash、GLM-5.3-Flash 和 Hy4 flash 三个目标模型、所有通用 benchmark 上，它的 draft 接受率都高于同配方训练的 DFlash 与 DSpark；DeepSeek-V4.1-Flash 的 SWE 64K 场景在同等单用户速度下吞吐最多提升 81%，最弱一档是 Hy4 flash 通用任务在温度 0 下只比 DSpark 高 3.9%。目前没有可直接安装的包，也没有标定版本的 vLLM 集成，官方仅给出在 NVIDIA H20 + vLLM + TP8（每实例张量并行 8）上的服务测试配置，Hy4 flash 的 vLLM recipe 默认使用 8x H200，属于“代码与论文已放出、部署细节待补”的状态。
+腾讯混元 AI Infra 团队开源了 DFly2：一种面向原生稀疏 LLM 的投机解码 drafter（草稿模型）。它的核心改动是 drafter 不再单独维护 KV cache，而是每个 draft 层绑定目标模型的一个稀疏注意力层，直接读取该层的 latent KV 和 indexer 已选出的 top-k 位置，并用目标层权重初始化。随腾讯自家 Hy4 flash 发布的版本为 0.85B 参数、5 层，官方称适配 DeepSeek-V4.1-Flash、GLM-5.3-Flash 和 Hy4 flash 三个目标模型。代码与配方在 GitHub 的 Tencent/AngelSpec 仓库和 vLLM recipe 页面（recipes.vllm.ai/tencent/Hy4-flash）可获取，论文编号 arXiv 2611.34776。所有吞吐与接受率数字均来自项目和论文自测，目前没有第三方复现。
 
 rss · MarkTechPost · 11月27日 03:31
 
-**「上手路径」** 第一步是打开 GitHub 的 Tencent/AngelSpec 仓库，获取 drafter 权重与配套的推理集成代码，并结合 recipes.vllm.ai/tencent/Hy4-flash 上的 vLLM recipe 启动服务；目前没有 pip 包，也没有固定版本的 vLLM 镜像。硬件上，官方测试环境是 H20 上单实例 TP8（8 张 H20），Hy4 flash 的 recipe 默认使用 8x H200，因此需要多卡环境而不是单卡。接入时需要完成两件事：把 draft 层与目标模型的稀疏注意力层按层配对，并让 draft 复用该层的 KV 与 index；以及在采样端开启投机解码的验证流程。复现吞吐数字需要你自己按论文的 SWE 64K / CodeSpan 64K 场景跑 benchmark，文章未给出可直接照做的命令。
+**「怎么用」** 入口是 GitHub 的 Tencent/AngelSpec 仓库，drafter 权重随 Hy4 flash（HuggingFace tencent/Hy4-flash）一起发布，vLLM 侧有现成 recipe。接入时需要按论文把每个 draft 层与目标模型对应的稀疏层配对，共享 KV 与 indexer 选择结果，并把目标最后一层 hidden state 注入 draft block；官方强调 drafter 跳过 prefill，prefill 到 decode 只多传一个 last-layer hidden state。这不是 pip 装完即用的组件：要改 vLLM 的模型配置与注意力路径，作者自己的测试环境是 H20、TP8、单实例。
 
-**「成本与上限」** 官方没给出每百万 token 的价格，也没给复现步骤，能确定的只有硬件门槛：文章中的服务测试用的是 NVIDIA H20，每实例 TP8 跑 vLLM，而 Hy4 flash 的 vLLM recipe 默认配置是 8×H200。收益体现在显存占用上：常规 3 层 drafter 每 token 要多占 3.0–3.4 KiB 的 KV，相当于目标模型的 1.20x–1.76x（目标模型自身为 4.4–17.2 KiB/token）；DFly2 不保留这份 cache 后，32K 上下文下同一显存池可多容纳 1.73x 请求，且每个 draft token 最多只 attend 约 2K 个 key，因此上下文变长时 drafting 开销基本不涨。以上均为论文自报数据，文章未列出可安装的包或对应的 vLLM 集成版本，真实部署成本与延迟仍无公开数字。
+**「成本与瓶颈」** 论文 Table 2 给出的对比是：常规 3 层 drafter 每 token 额外占 3.4 KiB（DeepSeek-V4.1-Flash，目标 KV 仅 4.4 KiB，涨到 1.76 倍）、3.0 KiB（GLM-5.3-Flash，1.26 倍）、3.4 KiB（Hy4 flash，1.20 倍）；去掉这块缓存后，32K 上下文下同一内存池能装 1.73 倍请求。每个 draft token 最多只注意约 2K 个 key，因此 draft 成本基本不随上下文长度增长。已知表现较差的情况是 Hy4 flash 通用任务、temperature 0：只比 DSpark 高 3.9%；官方称长上下文与 agentic 场景相对 DSpark 的领先为 10.0%–31.5%。
 
-**「为什么现在」** 值得关注的原因在于“drafter 不再单独占 KV 内存”这个具体工程收益，而不是新模型能力：论文 Table 2 显示常规 3 层 drafter cache 会让每 token 的 KV 内存增加 1.20x（Hy4 flash，17.2 KiB → +3.4 KiB）到 1.76x（DeepSeek-V4.1-Flash，4.4 KiB → +3.4 KiB）。在 32K 上下文下去掉这块缓存，同一内存池能容纳 1.73x 的请求数。这一点对长上下文和 agent 服务直接相关，只不过现在拿到的是权重加论文，不是能立刻替换现有推理栈的产品。
+**「为什么现在看」** 投机解码在长上下文下一直受“draft 自己也要存全前缀 KV”拖累，DFly2 是用目标模型已有的稀疏选择结果把这个成本压平的新机制，不是旧方案换名；但收益仍停留在论文自测阶段，先按“值得在自己流量上验一遍”对待。
 
-**标签**: `#模型发布`, `#开源项目`, `#成本优化`, `#能力边界`, `#工作流`
+**标签**: `#开源项目`, `#成本优化`, `#工具实测`, `#模型发布`
 
 ---
 
 <a id="item-ai-apps-2"></a>
-### [Clay 把 GTM Agent 改成 coding agent](https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/) ⭐️ 7.0/10
+### [llama.cpp AMD 基准看板](https://huggingface.co/blog/ggml-org/llamacpp-amd-bench) ⭐️ 7.0/10
 
-Clay AI 负责人 Jeff Barg 在播客中披露，Clay 已把 2025 年 9 月上线的 Sculptor agent 从「工具循环 + 精心调优的系统提示」重建为 coding agent：跑在 Pi harness 上，在云沙箱中执行 Clay CLI，并新增 Audiences 数据层把 CRM 与 Gong 记录对齐，让 agent 能同时看到两边的数据。Barg 给出的核心理由是旧工具集太受限、agent 看不到 CRM 数据和活动结果，而现有 LLM 评审式 eval 漏掉了真实用法（分析表格、百万行企业表）。他同时给出量级参考：用 TypeSafe 的 Jev 分类器把 Clay 库中约 4000 万家公司全部按 ICP 打分约需 1500 美元，但 Jev 尚未进入生产。
+Hugging Face 上出现了一个 llama.cpp 基准测试仪表盘，专门汇总 AMD Ryzen 处理器与 Radeon 显卡上的本地推理性能数据，目的是让人在挑硬件或调参前先看到可对比的实测结果。它本身不是新模型也不是新功能，而是一个数据汇集页面，任何在 AMD 平台上跑本地模型的人都能直接查阅。由于目前只有标题和简介可确认，页面的具体覆盖范围——收录了哪些模型、哪些量化格式（如 GGUF 的 Q4\_K\_M 一类）、测试用的是 prompt 处理还是 token 生成速度、样本量多少——都还没有核实，实际数字需要打开页面自行查看。
+
+rss · Hugging Face Blog · 11月26日 11:37
+
+**「怎么用」** 入口就是 Hugging Face 博客里的这个仪表盘页面，无需账号或付费，打开后按自己的 CPU/GPU 型号与想跑的模型规模去筛对应条目即可。想验证是否适用于自己的机器，最直接的办法是用 llama.cpp 自带的 benchmark 工具在本地跑一遍同样的模型与量化版本，再和看板上的数字对照。如果你还没装 llama.cpp，需要先从源码编译或走包管理器安装，AMD 显卡路径涉及对应的加速后端，具体编译选项以项目文档为准。
+
+**「为什么现在看」** 没有新能力，本质是把原本散落在论坛帖、个人博客和 issue 里的 AMD 本地推理测试数据集中成一个可对比的看板；价值在于省去自己搜零散数字的时间，但可信度取决于它的测试方法是否公开。
+
+**标签**: `#工具实测`, `#开源项目`, `#能力边界`
+
+---
+
+<a id="item-ai-apps-3"></a>
+### [20 个 Agent 调优查询引擎](https://www.qbitai.com/2026/11/513163.html) ⭐️ 6.0/10
+
+据量子位报道，20 个 AI Agents 在 4 天里跑了 350 次实验，把 Quickwit 的查询总耗时降低 31%，单条查询最高降 87%，并称结果超过 ClickBench 最佳公开成绩。原文正文只有一句话，没有给出 Quickwit 的版本号、硬件配置、数据集规模、对比基线以及 Agent 的具体分工方式。因此，「超越 ClickBench 最佳公开成绩」目前只是报道方的说法，第三方无法据此复现或核实。对使用 Quickwit 做日志检索的人，这是一个值得跟进的方向，但还不是可以照抄的结论。
+
+rss · 量子位 QbitAI · 11月27日 03:53
+
+**「怎么上手」** 目前没有可执行路径：报道未提供 Agent 框架、提示词、评测脚本，也没有给出对 Quickwit 配置文件或查询计划的改动 diff。如果要在自己的场景中验证同样的思路，第一步是在 ClickBench 官方仓库找到对应的查询集和硬件口径，先用当前 Quickwit 版本跑一遍自己的基线耗时，再决定是否值得引入多 Agent 自动调优。
+
+**「成本与上限」** 官方博客和转载报道都没有给出支持这次 4 天 350 次实验的 API 费用或算力开销，因此无法估算单次优化尝试的成本。可以量化的是产出率：约 350 次实验中只有 6 项优化通过多智能体评审被保留，其余全部丢弃。收益也限定在同一批 hot query 上——总耗时 40.5 s 降到 27.9 s，hot geomean 0.403 s 降到 0.304 s，报道未说明换用其他数据集、冷查询或不同索引配置后是否仍然成立。
+
+**「为什么值得看」** 「多个 Agent 自动做性能调优」的案例正在变多，但决定它是否可用的关键是能否拿到改动内容和复现配置；这篇目前只给了结果数字，能力增量还有待验证。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://www.besthub.dev/articles/20-ai-agents-autonomously-optimize-quickwit-beat-clickbench-sota-in-4-days-aa79b97b2079">20 AI Agents Autonomously Optimize Quickwit, Beat ClickBench ...</a></li>
+<li><a href="https://www.tabbyml.com/blog/beating-clickbench-sota-with-a-team-of-agentic-systems-engineers/">Beating ClickBench SOTA with a team of agentic systems ...</a></li>
+
+</ul>
+</details>
+
+**标签**: `#工具实测`, `#工作流`, `#能力边界`, `#成本优化`
+
+---
+
+<a id="item-ai-apps-4"></a>
+### [Clay 把 GTM Agent 改成编码 Agent](https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/) ⭐️ 6.0/10
+
+Clay 的 AI 负责人 Jeff Barg 在访谈中说明，Sculptor agent 已从「工具循环」重写为跑在 Pi harness 上的编码 agent：在云沙箱里执行 Clay CLI，并新增 Audiences 数据层，把 CRM 与 Gong 记录按同一实体对齐，让 agent 能同时看到客户数据和活动结果。Clay 还在做按任务自动选模型的路由器，官方称「即将上线」，未给日期；手动模型选择器保留给代理机构和大客户。成本口径是访谈里的粗算：用 TypeSafe 的 Jev 对 Clay 库中约 4000 万家公司逐一做 ICP 分类约需 1500 美元，每条合格线索的 enrichment 预算 1-10 美元，每次成功预约通话 10-100 美元。
 
 rss · Latent Space · 11月26日 23:02
 
-**「怎么用」** 如果你在 Clay 里做线索筛选，入口是 Clay 的 Workflows 和 agent 面板；Clay 也提供 Clay Agent Plugin 的 CLI 与 API，可以让 Claude Code 或 Codex 直接调用 Clay 的工具和构建块，Barg 称目前 Clay 自有 agent 与外部 harness 的使用量已接近 50/50。想自建同类系统的话，Clay 的路径是用 BullMQ 跑 agent 任务、用 Postgres/ClickHouse 存产品数据、用 Snowflake 做分析，并在 provider 限流或宕机时暂停与恢复任务。
+**「最小路径」** 要复刻这条路径，从 Clay 的 CLI/API 入口开始：在 Claude Code 或 Codex 里接入 Clay Agent Plugin（CLI &amp; API），把候选公司表整表交给 agent 做批量筛选和 enrichment，而不是在 Clay UI 里逐行操作。Clay 内部 GTM 团队就是在 Cursor 里用这套 CLI 做准备，销售团队用 Codex。如果只需要判断「这家公司是否符合 ICP」，可以跳过 agent 链路，直接拿 LinkedIn 页面文本（约 1000 token）加 500 token 的 ICP 描述喂给分类器做二分类。
 
-**「成本与天花板」** Barg 的估算：约 4000 万家公司、每家公司 LinkedIn 页约 1000 token 加 500 token 的 ICP 描述，全量分类约 1500 美元；他把合格线索的 enrichment 预算定在每条 1 到 10 美元，成交一通电话 10 到 100 美元。他称线索资格判定在 Clay 的 eval 上已接近满分约一年，过去一年内发布的多数模型都能查出公司最新融资轮；前沿模型的价值集中在深度调研和编排。规模化时的已知问题是按行跑 agent 会造成推理需求瞬间尖峰（例如 5 万行表），需要限流和公平调度；此外 agent 仍会重复用相同输入重试同一条 CLI 命令，也还不能可靠地阅读长 trace 定位失败步骤。
+**「成本与上限」** Jeff Barg 的粗略估算（Jev 尚未进入生产）：把 Clay 库里约 4000 万家公司逐家对照 ICP 打一遍分，账单约 1500 美元；他给的获客基准是每条合格线索 1-10 美元、每次成功预约通话 10-100 美元。第三方会议记录称 Clay 每月跑 3.5 亿个 GTM agent，Jev 1.13 的公开定价是每百万输入 token 0.042 美元、输出 token 免费（2026 年 9 月 21 日查询）。已知的失败模式是“每行一个 agent”：有人对 5 万行表格发起运行时，推理需求会瞬间冲高，Clay 靠请求限流和供应商限速时的暂停/恢复兜住，Jeff 自己也不确定 BullMQ 能否再撑十倍增长。
 
-**「实际反馈」** Barg 自述 Clay 内部 GTM 团队坚持留在 Cursor，因此索要了 CLI，销售团队现在在 Codex 里做 deal prep；客户一开始对 Workflows 感到困惑甚至不满、要求拿回表格，现在代理机构用户接受度上升，多数 workflow 由 CLI 或 agent 生成。这些都是该厂商方的一面之词，没有第三方实测数据。
+**「实测与边界」** Barg 自述 Clay 内部用量已接近 50/50 分布在自有 agent 和外部 harness 之间，比他自己预期更偏外部工具；早期 Sculptor 擅长加列，但「约到十个合格会议」很差，且用 LLM 评判工具调用的 eval 漏掉了分析表格、百万行企业表这类真实用法。他还说 agent 目前读不懂长 trace，模型倾向把耗时最长的一步当成出错点，Clay 大量 skill 仍靠手写，模型也会用相同输入反复重试同一条 CLI 命令。以上均为作者（Clay AI 负责人）自述，无第三方评测。
 
-**「为什么现在看」** 新东西主要是架构层面的：coding agent + CLI 沙箱 + Audiences 数据层是已上线的重建，而自动模型路由只被描述为「即将上线」，Jev 分类器也还没进生产，所以成本数字目前只是纸上推算。
+**「为何现在看」** 现在值得看的是工程取舍，不是新能力：用编码 agent 替掉自建工具循环、用 BullMQ 加 Postgres/ClickHouse/Snowflake 而不引入 Temporal 或 LangGraph、以及「推理支出达到 1000 万至 1 亿美元量级才值得后训练」的门槛判断，都能直接对照自己的栈。
+
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://docs.typesafe.ai/models">Models - TypeSafe</a></li>
+<li><a href="https://www.typesafeai.org/guides/jev-pricing">Jev pricing, without the guesswork - TypeSafe ai</a></li>
+<li><a href="https://8thlight.com/insights/production-is-the-new-prototype-notes-from-langchain-interrupt-2026">8th Light | Agents Work. Now the Hard Part: Notes from LangChain</a></li>
+
+</ul>
+</details>
 
 **标签**: `#Agent框架`, `#成本优化`, `#工作流`, `#能力边界`
 
 ---
 
-<a id="item-ai-apps-3"></a>
-### [GPT-6.2 额度缩水 40%](https://the-decoder.com/gpt-6-2-astra-users-now-hit-limits-40-faster-after-openai-patched-a-pricing-error/) ⭐️ 5.0/10
+<a id="item-ai-apps-5"></a>
+### [GPT-6.2 计费修复，额度消耗加快](https://www.techmeme.com/261126/p16#a261126p16) ⭐️ 5.0/10
 
-OpenAI 修复了一个计费 bug：此前 GPT-6.2 的 Astra 和 Sol 档订阅用户拿到了并不正确的折扣。修复后，在相同用量下 Astra 用户触达用量上限的速度比上周快 40%，Sol 用户快 25%。作为补偿，订阅用户获得一次额外的额度重置，企业版用户到年底前可使用免费 Fast Mode；OpenAI 同时表示正在测试把 Chat 与 Work 模式合并。文章没有给出具体 token 数、价格数字，也没有说明哪些套餐受影响、影响幅度如何换算。
+OpenAI 承认 GPT-6.2 Astra 与 Sol 上线时的计费逻辑有错，把用量打了不该打的折扣；修复后，同样的工作量会吃掉更多套餐额度——Astra 用户触及上限的速度比修复前快 40%，Sol 快 25%。作为补偿，订阅用户获得一次额外的额度重置，商业/企业用户在今年年底前可免费使用 Fast Mode。OpenAI 同时表示正在测试把 Chat 与 Work 两种模式合并。报道没有给出受影响的具体套餐名单、修正后的 token 或消息计费率，也没有说明修复的具体生效日期，因此无法据此重算自己的月度成本。
 
-rss · The Decoder · 11月26日 17:28
+rss · Techmeme · 11月26日 13:01
 
-**「怎么应对」** 不需要改任何配置或代码，这次改的是计量而不是接口。第一步是去用量面板确认自己落在 Astra 还是 Sol 档，然后按「快 40%」或「快 25%」重新估算每日可用轮次和批处理任务量。如果额度已经用尽，可以用补偿的那次额外重置继续；企业版用户可以切到 Fast Mode，年底前不计额外费用。
+**「现在能做什么」** 先确认自己日常跑的是 Astra 还是 Sol：需要省额度的任务优先切到 Sol，它的消耗增幅是 25% 而不是 40%。订阅用户可以直接用掉这次额外重置，商业版用户在年底前把 Fast Mode 打开不会有额外计费。除此之外没有可改的配置项——这次是服务端计费口径的变更，客户端参数调不动它。
 
-**「钱与天花板」** OpenAI 没有公布新的 token 单价或额度数值，能确认的只有相对变化：在同样的使用量下，GPT-6.2 Astra 的用量上限会比上周提前 40% 到达，Sol 则提前 25%，ChatGPT 和 Codex 两边都受影响。补偿方式是 Go、Plus、Pro、Business 账户各获得一次 banked reset，也就是一次可以留到之后使用的额度重置；Business 用户到年底可以免费用 Fast Mode。官方没有说明各档位的具体 token 数额，也没有说明该修复具体影响哪些套餐层级。
+**「配额与补偿」** 这次修正的是用量计费方式，并非调价：同样的工作量在 Astra 上会多消耗最多 40% 的套餐额度，在 Sol 上多消耗 25%，受影响的是付费 ChatGPT 订阅用户。作为补偿，订阅用户获得一次额外的用量重置，企业版用户到年底前可免费使用 Fast Mode。OpenAI 未公布按套餐划分的具体额度、新费率或生效日期，因此无法据此重算月度预算。
 
-**「为什么现在看」** 这并非新能力上线，只是把此前少算的费用补回来，所以上周的额度体感不能作为容量规划基准。
+**「为什么现在看」** 这不是新能力，而是把上周「便宜」的假象收回去：之前的低消耗是 bug，不是降价，所以本月剩余额度的消耗节奏会突然变快，而补偿（额外重置、免费 Fast Mode）带年底这个时间窗口。
 
 <details><summary>参考链接</summary>
 <ul>
-<li><a href="https://windowsreport.com/gpt-6-2-astra-users-now-hit-usage-limits-40-faster-after-openais-billing-error-fix/">GPT-6.2 Astra users now hit usage limits 40% faster after ...</a></li>
-<li><a href="https://tech.yahoo.com/ai/chatgpt/articles/chatgpts-gpt-6-2-honeymoon-115059332.html">ChatGPT&#x27;s GPT-6.2 honeymoon is over — OpenAI admits a billing ...</a></li>
-<li><a href="https://www.notebookcheck.net/ChatGPT-users-hit-limits-up-to-40-sooner-after-OpenAI-billing-fix.1460643.0.html">ChatGPT users hit limits up to 40% sooner after OpenAI ...</a></li>
+<li>OpenAI Fixes Billing Error, Tightens Usage Limits on New Models</li>
+<li>&#x27;We&#x27;ve fixed this now, so the same work will use more of your plan&#x27;s usage allowance&#x27;: OpenAI admits it made a mistake when launching GPT-6.2 - TechRadar</li>
 
 </ul>
 </details>
 
-**标签**: `#成本优化`, `#能力边界`
+**标签**: `#成本优化`, `#模型发布`
 
 ---
 
-<a id="item-ai-apps-4"></a>
+<a id="item-ai-apps-6"></a>
 ### [Sakana 发布 Namazu Small](https://www.marktechpost.com/2026/11/26/sakana-ai-namazu-small-30b-nemotron-3-nano/) ⭐️ 5.0/10
 
-Sakana AI 于 11 月 26 日公布 Namazu Small：一个总参数 30B、激活参数 3B（30B-A3B）的推理模型，基于 NVIDIA Nemotron 3 Nano 的预训练基座（而非 NVIDIA 后训练版本）做继续预训练与自研后训练，定位是网页检索与长文档问答。官方自报的 25 项基准平均分为 60.1，高于 120B-A12B 的 Nemotron 3 Super（56.2）和 Nemotron 3 Nano（50.2）；其中 BrowseComp 73.5（Super 为 36.1）、DeepSearchQA 84.3、LLM-jp LongBench 86.0。但闭卷知识明显偏弱，SimpleQA Verified 仅 6.8（Nano 为 9.1，Super 为 18.1），日语 SimpleQA 8.0（Super 为 24.9）。权重、许可证、上下文长度、硬件要求与价格均未公布，Sakana 称本地部署细节将在 2026 年 12 月给出，因此目前还无法下载或调用。
+Sakana AI 在 11 月 26 日公布 Namazu Small，一个 30B 总参数、3B 激活（官方图表标注 30B-A3B）的推理模型：它从 NVIDIA Nemotron 3 Nano 的预训练基座（而非 NVIDIA 后训练版本）出发，由 Sakana 自行做继续预训练与后训练，主打网页搜索和长文档问答。Sakana 自报在 25 项基准上平均 60.1 分，高于 Nemotron 3 Super（120B-A12B，56.2）和 Nemotron 3 Nano（50.2），其中 BrowseComp 73.5 约为 Super 36.1 的两倍。但权重尚未发布，许可证、上下文长度、硬件要求和价格全部未披露，官方称本地部署细节要等到 2026 年 12 月，因此现在没有人能下载或调用它。
 
 rss · MarkTechPost · 11月26日 22:06
 
-**「现在怎么接入」** 当前没有任何可直接使用的入口：权重未发布，也没有 API 或定价页，只有 Sakana 官网的公告与基准图表，因此无法安装、部署或切换。如果现在就需要类似能力，可行的近期路径是改用基座模型 Nemotron 3 Nano 的开放权重（Hugging Face 上可获取，NVIDIA 称支持最长 1M token 上下文，面向 DGX Spark、H100、B200），并自行做检索或长文档的提示工程；Namazu Small 的增量主要来自 Sakana 的后训练，这部分还没有对外提供。等待名单未提及，留意 12 月的本地部署公告是唯一动作。
+**「怎么用上」** 目前没有可安装的包、可调用的 API 或可下载的权重，唯一能做的是盯住 Sakana 的 Namazu Small 官方页面，等 12 月的权重与部署说明。如果现在就需要同量级能力，可以直接取 Hugging Face 上的 Nemotron 3 Nano 基座：30B-A3B 混合 Mamba-Transformer MoE，上下文最高 1M token，NVIDIA Nemotron Open Model License，NVIDIA 标注面向 DGX Spark、H100 和 B200。注意 Sakana 是在该基座的预训练版本上二次训练的，官方没有说明 Namazu Small 本身能否在这些硬件上跑起来。
 
-**「钱与天花板」** 定价完全未披露，无法估算单位 token 成本。已知能力上限来自官方自报数据：25 项基准中它只在 13 项上超过 120B 的 Super，闭卷知识（SimpleQA Verified 6.8、日语 SimpleQA 8.0）和医疗问答（HealthBench 40.6，低于 Nano 的 47.5）是明确短板，Sakana 自己也承认「仅依赖内部知识的任务提升不大」。上下文长度未公布，基座 Nemotron 3 Nano 标称最长 1M token，但 Namazu Small 是否保留该长度没有说明。所有分数均为厂商自报，评测脚本与复现材料未公开。
+**「成本与天花板」** 价格、许可证、上下文长度均未公开，无法给出任何单位成本估算。能力边界倒是给得比较清楚：闭卷知识是明显短板，SimpleQA Verified 只有 6.8（Nemotron 3 Nano 9.1、Super 18.1），日文 SimpleQA 8.0（Super 24.9），HealthBench 40.6 低于 Nano 的 47.5，Sakana 自己承认仅依赖内部知识的任务提升不大。基座 Nemotron 3 Nano 的上下文上限是 1M token，Namazu Small 是否保留这一长度未说明。
 
-**「为何现在关注」** 值得关注的是能力取向上的一次明确取舍——用 3B 激活参数在检索与长文档接地任务上压过 120B 模型，这对成本敏感的研究型 agent 有参考价值；但现在只是发布公告，权重与价格要等到 2026 年 12 月，还不能算可用的新工具。
+**「为什么现在看」** 值得记下的信号是“30B-A3B 加针对性后训练，在搜索与长文档任务上压过 120B 模型”这条路线，但所有分数均为 Sakana 自报、无第三方复现、也没有权重可验证，现阶段它只是信息，不是能上手的东西。
 
-**标签**: `#模型发布`, `#能力边界`, `#开源项目`
+**标签**: `#模型发布`, `#能力边界`, `#工具实测`
 
 ---
 
-<a id="item-ai-apps-5"></a>
-### [Google Play 将公开商家地址](https://thenextweb.com/news/google-play-developer-addresses-trader-dsa-worldwide) ⭐️ 5.0/10
+<a id="item-ai-apps-7"></a>
+### [微软公开 ARTEX 攻击架构](https://the-decoder.com/microsoft-details-how-state-backed-hackers-use-the-artex-ai-framework-to-automate-cyberattacks/) ⭐️ 4.0/10
 
-Google Play 要求开发者在 2027 年 2 月 1 日前向 Google 申报自己是否属于欧盟《数字服务法》（DSA）定义的「trader」（商家）。从 3 月 1 日起，被认定为商家的账号，其联系方式将在全球范围内展示；对以个人身份注册的账号来说，这意味着公开一个真实住址和电话号码。对比之下，Apple 只在欧盟范围内展示同类信息。这条规则对所有在 Google Play 上架应用的开发者生效，包括发布 AI 应用的独立开发者。
+微软公开了 ARTEX 的技术架构：这是一个自 2026 年 7 月起被广泛使用的 AI 框架，由多个专用 agent 分工跑完攻击流程，人工介入接近于零。微软称，中国和朝鲜背景的国家级组织以及犯罪团伙都已在用它。微软给出的防御方向是蜜罐、伪造成功信号这类欺骗手段，但对能自我学习调整的 agent 能撑多久，微软自己也没有给出答案。公开材料里没有 agent 的工具调用链、所用模型与参数、运行成本，也没有可写入检测规则的指标，因此读者目前无法据此修改任何配置。
 
-rss · The Next Web · 11月26日 21:27
+rss · The Decoder · 11月26日 11:30
 
-**「怎么处理」** 入口在 Play Console 的开发者账号信息设置里，需要在 2027 年 2 月 1 日前完成 DSA 商家身份申报。如果不想公开家庭住址，就要考虑把个人账号改为组织或企业类型；但原文摘要在这里被截断，没有写明改账号类型的具体步骤、所需材料，也没有说明审核要多久，这部分需要直接向 Google 支持确认。申报本身没有给出任何 API、参数或代码层面的操作。
+**「为什么现在看」** 这次真正新增的是「厂商首次公开架构」这一披露动作，并非新技术能力；这些能力自 2026 年 7 月起就已在被使用，而披露深度仍停留在概念层，不足以支撑防御动作。
 
-**「为什么现在看」** 截止日期是明确的，而规避地址公开的唯一现实办法：变更账号类型并不是提交申请后就立刻生效，从发布时间算起能操作的窗口只有约两个月。
+**标签**: `#Agent框架`, `#能力边界`, `#工作流`
 
-**标签**: `#平台政策`, `#合规风险`, `#工作流`
+---
+
+<a id="item-ai-apps-8"></a>
+### [豆包工作接入剪映插件](https://36kr.com/newsflashes/4087610228046208) ⭐️ 4.0/10
+
+豆包工作宣布「独家」接入剪映官方插件：用户把视频素材交给豆包工作，用一句话描述剪辑需求即可调用剪映完成剪辑，之后能继续用对话改，也可以打开多轨草稿手动细调。官方口径只到功能层面，未公布价格与计费方式、开放范围（全量还是灰度）、是否需要付费订阅、支持的剪映版本、单次可处理的素材时长与分辨率上限，也没有给延迟或成片效果数据。因此目前只能确认「宣布接入」，不能确认普通账号现在就能用上。
+
+telegram · zaihuapd · 11月27日 07:45
+
+**「怎么用上」** 入口在豆包工作内部，不是在剪映里：在豆包工作中选用剪映插件，上传素材，用一句话写清剪辑意图（例如时长、节奏、要保留的片段），生成后继续对话修改，或直接打开多轨草稿做时间线级调整。由于官方没说明灰度规则，能否看到这个插件入口取决于你的账号是否在放开范围内；看不到就是还没轮到，不是操作问题。
+
+**「为什么现在看」** 这更像入口整合，而非新能力：剪辑和对话改片的能力此前都已存在，变化只是把剪映作为官方插件接进豆包工作的对话流程，并允许回写多轨草稿；在开放范围和效果数据出来之前，它值不值得用主要取决于你的账号能不能真的调起这个插件。
+
+**标签**: `#工作流`, `#能力边界`
 
 ---
 
 ## 科技新闻
 
 <a id="item-tech-news-1"></a>
-### [Google Workspace MCP 服务器因 Gmail 发送限制受质疑](https://techstackups.com/articles/google-workspace-ai-agents-mcp/) ⭐️ 7.0/10
+### [谷歌拟让 AI 代理使用其 MCP 服务器，Gmail 不能发信](https://techstackups.com/articles/google-workspace-ai-agents-mcp/) ⭐️ 7.0/10
 
-Google 为 AI 智能体推出 Workspace MCP 服务器，使智能体可调用 Gmail、Docs 等 Workspace 能力。但报道称 Gmail 的 MCP 服务器不能发送邮件，这一限制成为主要争议点。评论者围绕该限制是否必要、是否已被更新的 API 能力推翻展开讨论，使 Gmail MCP 服务器当前的实际发送能力仍存疑。
+据这篇报道，谷歌计划通过 MCP 服务器让 AI 代理使用 Workspace 服务。报道同时指出，Gmail 的 MCP 集成不能发送邮件，这一限制及其原因引发讨论。该消息描述的是平台和 API 层面的接入安排，现有材料没有说明它是否已全面上线，也没有说明哪些账户可以使用。
 
 hackernews · ritzaco · 11月26日 09:44 · [社区讨论](https://news.ycombinator.com/item?id=50653477)
 
-**「背景」** MCP 是让 AI 应用以统一接口调用外部工具和数据的协议；Workspace MCP 服务器把 Gmail、Docs 等产品能力封装成智能体可调用的工具。发送邮件不同于读取数据，涉及用户授权、误发和审计等安全边界，因此发送类工具通常需要额外的确认或权限设计。
+**「背景：MCP 与人工确认」** MCP（Model Context Protocol）是让 AI 代理以统一方式连接外部工具的开放协议；其 elicitation 机制允许服务器在工具调用无法继续时暂停流程，向用户请求确认或补充信息。Google 的 Workspace MCP 服务器文档则说明，Gmail 服务器会在代理执行发送等敏感操作前，通过 MCP 表单式 elicitation 触发由服务器驱动的人工确认。
 
-**「影响」** 对希望用智能体自动处理邮件的开发者来说，若 Gmail MCP 服务器不提供发送工具，他们可能需要改用 Gmail API 自行封装发送逻辑，或让智能体操作浏览器完成发信；前者增加集成工作，后者按评论说法更繁琐且更浪费资源。
+**「实际影响」** 评论者指出，需要让代理发送邮件的开发者可能转向浏览器自动化等绕行方案，而不是直接调用 MCP 工具，这会增加流程复杂度和资源开销。
 
-**「社区讨论」** 评论者对限制的合理性看法不一：perdy 认为 MCP 的 elicitation 已能在工具调用前要求用户确认，因此把发送工具限定为合作伙伴更像商业决策，而非单纯安全考虑；Schnitz 则预计用户会改用浏览器自动化发信，流程更繁琐。bugthe0ry 贴出 Gmail API 参考文档称发送能力现已支持，并质疑文章所述限制是否已经过时。
+**「社区讨论」** 有评论者认为，Gmail 不能发信更像商业决策而非安全考虑，因为 MCP 的 elicitation 机制可以在发送前暂停工具调用并要求用户确认。也有人称 Gmail API 现已支持发送，认为文章信息可能已过时；另有评论认为，MCP 至少迫使谷歌补齐长期缺失的 Workspace API 能力，并预计想走全代理流程的用户会找到绕行办法。
 
-**标签**: `#MCP`, `#AI agents`, `#Google Workspace`, `#Gmail API`, `#API design`
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server">Configure the Gmail MCP server | Google for Developers</a></li>
+<li><a href="https://developers.google.com/workspace/guides/configure-mcp-servers">Configure the Google Workspace MCP servers</a></li>
+<li><a href="https://www.langchain.com/blog/mcp-in-langchain-stateless-protocol-elicitation-and-more">MCP in LangChain: Stateless Protocol , Elicitation , and More!</a></li>
+<li><a href="https://dev.to/kachurun/mcp-elicitation-human-in-the-loop-for-mcp-servers-m6a">MCP Elicitation : Human -in-the-Loop for MCP... - DEV Community</a></li>
+
+</ul>
+</details>
+
+**标签**: `#Model Context Protocol`, `#Google Workspace`, `#AI agents`, `#API design`, `#platform policy`
 
 ---
 
 <a id="item-tech-news-2"></a>
-### [黑五硬盘价格大涨，AI 存储需求挤压供应](https://blog.ktz.me/black-friday-hard-drive-prices-are-messed-up/) ⭐️ 7.0/10
+### [阿斯麦 CEO 反对对华全面断供光刻设备](https://www.semafor.com/article/11/25/2026/asml-makes-the-case-for-selling-chips-to-china) ⭐️ 7.0/10
 
-黑五期间硬盘价格大幅上涨，Hacker News 上的讨论还延伸到内存价格，并把涨价归因于 AI 驱动的存储需求。评论者认为，超大规模云厂商正在大量采购存储，而制造商因扩产资本开支高、又担心 AI 需求回落而不愿增加产能。该帖主要是市场观察和用户经历，不是厂商公告或独立测量的价格数据。
+阿斯麦 CEO 富凯在 Semafor《Future Proof》节目中表示，出口管制应保护最先进的技术，但不该把中国完全排除在外；全面断供只会促使中国在自研上“加倍甚至三倍投入”。他称，阿斯麦卖给中国的设备落后最先进制程十多年，维持这一代差反而让中国继续依赖西方设备；近 30 年来，阿斯麦在中国光刻机市场的份额接近 100%。美国正推动 MATCH 法案，拟把管制范围从 EUV 扩大到浸没式 DUV 和维护服务，荷兰政府和阿斯麦均表示反对。
 
-hackernews · zdw · 11月27日 01:13 · [社区讨论](https://news.ycombinator.com/item?id=50661646)
+telegram · zaihuapd · 11月26日 12:19
 
-**「背景」** 硬盘和内存制造属于资本密集型行业，厂商扩产需要高额前期投入；当 AI 数据中心运营商集中采购大容量存储时，短期供需容易失衡。评论者还指出，这类存储市场过去多次经历价格暴涨、随后产能释放和价格回落的周期，因此当前涨价更可能反映供需关系，而非厂商价格联盟。
+**「背景：EUV 管制与 MATCH 法案的边界」** 光刻机是芯片制造的核心设备，阿斯麦在先进光刻机上占据主导地位：EUV 用于最先进制程，早已被纳入对华出口管制；而浸没式 DUV 主要服务成熟制程，此前仍在许可销售范围内。美国推动的 MATCH 法案争议点正在于此——是否把管制从 EUV 进一步延伸到浸没式 DUV 设备及其维护服务。
 
-**「影响」** 对需要自建存储或扩容集群的工程师和小型运营者来说，当前更现实的选择可能是提前囤货、推迟采购或降低容量目标；评论中的澳大利亚企业称已提前购买 20 组硬盘，但按现价最多再支撑约一年。
+**「对在华晶圆厂的影响」** 若美国推动的 MATCH 法案将管制从 EUV 扩大到浸没式 DUV 及维护服务，中国境内依赖阿斯麦 DUV 设备的晶圆厂将同时面临新机采购受限，以及已装机台服务和技术支持中断的风险，扩产与现有产线维护都会受到直接影响。相关企业需提前评估备件与服务替代方案；该法案目前仍是提案，荷兰政府和阿斯麦均已表示反对。
 
-**「讨论」** 评论者对涨价原因看法不一：有人认为是超大规模厂商扫货造成的供需失衡，而非价格卡特尔；也有人预计存储的繁荣—萧条周期会在几年内再次压低每 GB 价格。还有用户引用 Tom&\#x27;s Hardware 的跟踪数据称 DDR5-6400 128GB 价格从 329 美元升至 3,145 美元，并提到黑五期间 32GB 内存迷你主机接近 500 美元。
+<details><summary>参考链接</summary>
+<ul>
+<li><a href="https://www.thedefensenews.com/US-Pushes-Bill-to-Compel-Netherlands-to-Halt-Remaining-ASML-Machine-Sales-and-Service-to-China/">US Pushes Bill to Compel Netherlands to Halt Remaining ASML ...</a></li>
+<li><a href="https://techwireasia.com/2026/04/match-act-semiconductor-export-controls-china-asia/">The MATCH Act Wants to Cut Off China&#x27;s Last Semiconductor ...</a></li>
 
-**标签**: `#hardware pricing`, `#storage`, `#AI infrastructure`, `#supply chain`, `#Hacker News`
+</ul>
+</details>
+
+**标签**: `#semiconductor-export-controls`, `#ASML`, `#China-chip-industry`, `#lithography`, `#tech-policy`
 
 ---
 
 <a id="item-tech-news-3"></a>
-### [阿斯麦 CEO 反对全面断供，主张维持技术代差](https://www.semafor.com/article/11/25/2026/asml-makes-the-case-for-selling-chips-to-china) ⭐️ 7.0/10
+### [荷兰大臣反对美国 MATCH Act 限制 ASML 对华销售](https://www.bloomberg.com/news/articles/2026-11-26/netherlands-plans-to-fight-rollout-of-proposed-us-curbs-on-asml) ⭐️ 7.0/10
 
-阿斯麦首席执行官富凯在 Semafor《Future Proof》节目中公开反对将中国完全排除在出口管制之外，认为这只会促使中国在自研上“加倍甚至三倍投入”。他表示，阿斯麦对华销售的光刻设备落后最先进制程十多年，维持这道技术代差反而能让中国继续依赖西方设备。美国正推动 MATCH 法案，拟把管制范围从 EUV 扩大到浸没式 DUV 和维护服务，荷兰政府和阿斯麦均表示反对。
+荷兰外贸与发展合作大臣 Sjoerd Sjoerdsma 11 月 26 日在议会表示，荷兰不会接受美国进一步限制 ASML 对华销售，并反对 MATCH Act 的域外管辖效力。荷兰正与欧盟委员会协调，并联合德国、法国游说，争取将该法案从美国年度国防政策法案中剔除。MATCH Act 由美国两党共同提出，要求荷兰、日本等盟友实施更严格的对华出口管制，否则美方将单方面限制其半导体设备；中国约占 ASML 今年销售额的 20%，外界预计美国国会 12 月中旬表决，通过可能性很大。
 
-telegram · zaihuapd · 11月26日 12:19
+telegram · zaihuapd · 11月26日 14:56
 
-**「背景」** 光刻机是芯片制造的关键设备，阿斯麦在先进光刻设备领域占据主导地位。美国此前已限制 EUV 对华出口，MATCH 法案拟将限制进一步扩至浸没式 DUV 和维护服务。富凯称，近 30 年来阿斯麦在中国光刻机市场的份额接近 100%，中国因此接受了对其技术的依赖。
+**「背景：MATCH Act 的域外机制与立法载体」** MATCH Act 由美国两党共同提出，其核心机制是把美国的出口管制延伸到盟友：要求荷兰、日本等国家对华实施更严格的半导体设备出口限制，否则美方将单方面限制这些国家的设备出口。该法案被搭载进美国年度国防政策立法审议，这也解释了荷兰为何选择与欧盟委员会协调、联合德国和法国游说，把相关条款从这部国防法案中剔除，而不是去否决一部独立的专门法案。
 
-**「影响」** 若 MATCH 法案通过，中国晶圆厂采购浸没式 DUV 及获得阿斯麦维护服务将面临新限制，既有设备的可用率和扩产安排会直接受到影响；阿斯麦的对华销售与服务收入也将承压。目前该法案仍在推动阶段。
+**「影响」** 若法案按现文本通过，美国可能绕过荷兰出口许可制度，单方面限制 ASML 对华设备销售；中国市场约占 ASML 今年销售额的 20%，相关限制将直接压缩这部分业务。当前的关键节点是荷兰在 12 月中旬美国国会表决前，能否通过欧盟及德法协调将相关条款从国防政策法案中移除。
 
-**标签**: `#半导体`, `#出口管制`, `#ASML`, `#光刻机`, `#中美科技竞争`
+**标签**: `#ASML`, `#export controls`, `#semiconductors`, `#Netherlands`, `#US-China tech policy`
 
 ---
 
 <a id="item-tech-news-4"></a>
-### [荷兰大臣反对美国 MATCH 法案限制 ASML 对华销售](https://www.bloomberg.com/news/articles/2026-11-26/netherlands-plans-to-fight-rollout-of-proposed-us-curbs-on-asml) ⭐️ 7.0/10
+### [传智谱 GLM-5.5 与 Kimi K4 发布延期](https://www.reuters.com/world/china/us-chip-curbs-distillation-crackdown-threaten-chinese-ai-model-development-2026-11-26/) ⭐️ 7.0/10
 
-荷兰外贸与发展合作大臣 Sjoerd Sjoerdsma 11 月 26 日在议会表示，荷兰不会接受美国进一步限制 ASML 对华销售，并反对拟议中的 MATCH Act 的域外管辖效力，称荷兰“不会任人摆布”。该法案由美国两党共同提出，要求荷兰、日本等盟友对华实施更严格的半导体设备出口管制，否则美方将单方面限制相关设备销售；荷兰正与欧盟委员会协调，并联合德国、法国游说，争取把该法案从美国年度国防政策法案中剔除。中国约占 ASML 今年销售额的 20%。外界预计美国国会 12 月中旬表决，通过的可能性很大；目前该措施仍是提案，尚未生效。
+据 Telegram 频道转述路透社报道，智谱原计划在 2026 年 11 月发布参数规模约 3 万亿的旗舰模型 GLM-5.5，但受反蒸馏防护措施和算力限制等因素影响，发布时间可能推迟至 2027 年第一季度或更晚；月之暗面的下一代旗舰 Kimi K4 也可能推迟至 2027 年年中。报道还称，月之暗面内部预计，若完全失去海外算力，其重大版本发布间隔将从 6 个月拉长到一年以上；同时，Anthropic 与 OpenAI 的反蒸馏措施使其获取训练数据更困难，该公司已转向蒸馏谷歌和 Meta 的模型。上述说法来自简短转述，网传朋友圈截图显示智谱方面对此否认，相关延期尚未获得独立证实。
 
-telegram · zaihuapd · 11月26日 14:56
+telegram · zaihuapd · 11月26日 15:14
 
-**「背景」** 美国自 2022 年 10 月宣布对华半导体出口管制后，荷兰政府配合执行相关规则，已阻止 ASML 向中国出口最先进的设备（tool-1-2、tool-1-3）。此次争议的 MATCH Act 则试图把这种管制义务写入美国法律，要求荷兰、日本等盟友跟进，否则由美方单方面限制其设备出口——这正是荷兰方面主张不应由美国域外决定本国出口政策的原因（tool-1-1）。
+**「背景」** 所谓蒸馏，通常指用能力更强的模型的输出作为训练数据，以较低成本提升自有模型；Anthropic 此前指控中国 AI 实验室通过大量 Claude 交互实施违规蒸馏，其中阿里巴巴相关活动在 5 月至 7 月涉及逾 1.51 亿次交互。彭博社 2026 年 11 月 25 日还报道，美国新的芯片限制已令涉及字节跳动、阿里巴巴和腾讯的数十亿美元亚洲数据中心贷款受阻，显示算力获取正同步收紧。
 
-**「对 ASML 与荷兰供应链的具体影响」** 若 MATCH Act 按现有文本通过，受限范围将不止于新设备：现行规定已禁止 ASML 向中国出口最先进的 EUV 光刻机，而该法案的关键增量在于收紧转售与再出口管控，并以“盟友不跟进则美方单方面限制其半导体设备”的机制向荷兰、日本施压（tool-3-1、tool-3-3）。对 ASML 而言，中国约占其今年销售额的 20%，荷兰政府正是以这一销售冲击为由，联合欧盟委员会及德法在美国国会 12 月中旬表决前游说，力争把相关条款从年度国防政策法案中剔除（tool-3-2）。
+**「对开发者的影响」** 对依赖智谱和月之暗面旗舰模型 API 的开发者而言，最直接的后果是升级与兼容规划可能被拉长：GLM-5.5 尚未发布并可能推迟到 2027 年第一季度或更晚，而月之暗面内部预计，若失去海外算力，重大版本间隔会从 6 个月拉长到一年以上，Kimi K4 可能推迟到 2027 年中。因此，基于现有版本构建的产品需要预留更长的支持周期；不过智谱已否认相关说法，延期仍属未经独立证实的报道。
 
 <details><summary>参考链接</summary>
 <ul>
-<li>Dutch lawmakers urge government to resist US MATCH bill targeting ASML</li>
-<li>US targets Chinese chipmaking with proposed export restrictions on ...</li>
-<li>Dutch Throttle Back ASML Exports, China Squawks.</li>
-<li><a href="https://overcentral.com/en/netherlands-opposes-match-act-asml-china/">Netherlands Opposes US Bill Restricting ASML Chip Sales to China</a></li>
-<li><a href="https://calgarytribune.com/asml-and-netherlands-lobby-us-congress-to-drop-match-act-curbs/">ASML and Netherlands Lobby US Congress to Drop MATCH Act Curbs</a></li>
-<li><a href="https://www.fool.com/investing/2026/04/24/the-match-act-could-blow-a-hole-in-asmls-revenue-h/">The MATCH Act Could Blow a Hole in ASML &#x27;s Revenue. Here&#x27;s What...</a></li>
+<li><a href="https://www.bloomberg.com/news/articles/2026-11-25/billions-in-data-center-deals-grind-to-halt-after-ai-chip-curbs">US AI Chip Curbs Stall Billions in Asia Data Center Loans... - Bloomberg</a></li>
+<li><a href="https://qz.com/anthropic-chinese-ai-labs-distillation-alibaba-deepseek-moonshot-091126">Anthropic accuses Chinese AI labs of illicit distillation attacks</a></li>
+<li>EXCLUSIVE: US chip curbs, distillation crackdown threaten Chinese AI model development, sources say | Reuters</li>
+<li>Nov 26 (Reuters) - China&#x27;s Z.AI has fallen behind schedule on its next flagship AI model ... - Facebook</li>
 
 </ul>
 </details>
 
-**标签**: `#semiconductor export controls`, `#ASML`, `#US-Netherlands relations`, `#chip supply chain`, `#technology policy`
-
----
-
-<a id="item-tech-news-5"></a>
-### [纳德拉承认微软应届生招聘放缓，称企业先耗尽 AI 预算再增人手](https://www.windowslatest.com/2026/11/27/lets-add-the-next-human-satya-nadella-admits-new-grad-hiring-slowed-as-companies-rebuild-around-ai-and-says-every-company-will-add-its-next-person-after-it-burns-through-its-ai-budget/) ⭐️ 7.0/10
-
-微软 CEO 萨提亚·纳德拉在 The Pragmatic Engineer 播客中承认应届生招聘已经放缓，称公司会先把现有员工调配到合适岗位，之后才补招新人；他还表示 AI 原生公司会“先用完 AI 预算，再招下一个人类”，并认为未来每家公司都会如此。纳德拉今年年初在达沃斯曾称自己“仍然相信校园招聘”，此番表态与之形成对照。据该转述，截至今年 6 月 30 日微软员工数为 22.3 万，一年减少 5000 人，是 2016 年以来首次年度下滑。报道还引用麻省理工学院与微软研究院的论文称，采用 GitHub Copilot 的企业季度技术岗招聘减少 29%，初级岗位受影响最大；上述内容来自 Telegram 频道的二次转述，未附研究原始数据与统计口径，具体结论仍需以原始论文为准。
-
-telegram · zaihuapd · 11月27日 03:03
-
-**「背景」** 纳德拉今年初在达沃斯还表示“仍然相信校园招聘”，这一表态与此次承认应届生招聘放缓形成直接对照。微软截至今年 6 月 30 日的员工总数为 22.3 万，一年减少 5000 人，为 2016 年以来首次年度下滑，为理解其招聘策略变化提供了背景。
-
-**「入门岗位入口收窄」** 对应届生和初级工程师来说，直接后果是入门级岗位变少：纳德拉描述的招聘顺序是先把现有员工调配到合适岗位、之后才补招新人，这意味着外部求职者还要与内部转岗者竞争同一批职位。来源引用的数据也指向同一方向：截至 6 月 30 日，微软员工总数为 22.3 万，一年减少 5000 人，是 2016 年以来首次年度下滑；MIT 与微软研究院的论文称，采用 GitHub Copilot 的企业季度技术岗招聘减少 29%，初级岗位受影响最大。这些数字来自二手转述的摘要，论文的方法与样本范围未被展开，因此“29%”应视为该研究在特定企业样本下的估计，而非整个行业的普遍幅度。
-
-**标签**: `#AI labor impact`, `#Microsoft`, `#entry-level hiring`, `#GitHub Copilot`, `#tech industry`
-
----
-
-<a id="item-tech-news-6"></a>
-### [蜜雪冰城 5 亿元入股 DeepSeek 千亿元级融资](https://m.sohu.com/a/1107027659_115479) ⭐️ 7.0/10
-
-据搜狐网报道，DeepSeek 已完成第二轮融资，规模约 1000 亿至 1055 亿元，投后估值约 6155 亿元；新增 31 家出资人，包括腾讯、宁德时代、中国移动、vivo，蜜雪冰城股份有限公司认缴 5 亿元。报道称，蜜雪冰城这 5 亿元通过天津砺思星深基金投入，该基金由砺思资本管理，备案时募资 26.4 亿元，后扩募至 75.2 亿元关账。上述融资规模、估值和出资方信息均来自该报道，尚无独立验证。
-
-telegram · zaihuapd · 11月27日 06:33
-
-**「背景」** 据 IT 之家援引《The Information》报道，DeepSeek 今年 6 月已完成约 510 亿元的首轮融资；此后第二轮融资目标几经调整，最初设为 500 亿元，随后上调至约 1000 亿元。观察者网援引企查查信息称，本轮共募集 1055 亿元，投后估值 6155 亿元，再度刷新中国 AI 行业单轮融资规模纪录。
-
-**「对开发者的影响」** 对开发者和企业客户而言，目前披露的信息仅涉及资本结构，未说明资金将用于算力、模型研发或产品定价，因此融资消息本身不构成 DeepSeek 服务能力或接口兼容性的可验证变化。
-
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://www.ithome.com/1/020/251.htm">曝 DeepSeek 第 二 轮 融 资 1055 亿 元： 估 值 6155 亿 元，vivo...</a></li>
-<li><a href="https://www.guancha.cn/CaiJing/2026_11_19_909123.shtml">31名股东排队参 投 ， DeepSeek 最新 估 值 超6000 亿</a></li>
-
-</ul>
-</details>
-
-**标签**: `#DeepSeek`, `#AI 融资`, `#中国 AI`, `#科技产业`, `#投资`
-
----
-
-## 科技博客
-
-<a id="item-tech-blog-1"></a>
-### [AI 检测之争，本质是把关权之争](https://seangoedecke.com/who-gets-to-decide-if-something-is-written-by-ai/) ⭐️ 8.0/10
-
-rss · Sean Goedecke · 11月27日 00:00
-
-**「背景」** 围绕作品、稿件或推文是否由 AI 生成的争议几乎每天都在发生。作者认为，反 AI 群体对 Pangram 等检测工具的反感，不能只归结为准确率或使用伦理，背后还有一个更基本的问题。
-
-**「方案」** 在作者看来，真正的问题是“谁有权判定一段文字由 AI 写成”，也就是谁掌握决定文学奖归属、学生是否及格、谁能进入公共讨论的把关权。反 AI 者不愿让 Pangram 成为裁判，是因为它仍属于他们所警惕的科技行业；推而广之，他们也反对用工具化流程取代社区判断。作者同情这种权力视角，却认为唯一的替代方案——社区自律——更糟：不用 AI 的人往往不熟悉 AI 文本特征，容易把明显的 AI 痕迹当成人类写作，或把冗长礼貌的人类文本判成 AI，作者甚至断言他们会“更经常判错”。事后调查同样不可靠，熟练的 AI 写作可以生成草稿、同期对话等“真实写作”的全部痕迹。因此作者支持检测工具，并建议不信任公司的人推动开源方案或由政府自建检测平台；若把判定权交给社区，结果只会是更多 AI 写作文本进入文学与文化空间。作者也承认，部分论证是诊断性的，甚至带有直觉成分。
-
-**「启示」** 作者的核心结论是：AI 检测争议首先是制度信任与权力归属问题，而不是单纯的工具精度问题；拒绝检测工具并不会阻止 AI 写作，反而可能把把关权交给更不擅长判断的社区。
-
-**标签**: `#AI detection`, `#power and institutions`, `#community moderation`, `#trust in tooling`, `#writing authenticity`
+**标签**: `#AI models`, `#China AI`, `#distillation`, `#compute constraints`, `#industry news`
 
 ---
 
