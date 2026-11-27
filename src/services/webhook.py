@@ -357,6 +357,13 @@ class WebhookNotifier:
         headers["Content-Type"] = content_type
         return request_url, body_content, headers
 
+    def _title_prefix(self) -> str:
+        """Return the configured title prefix (with trailing space) or an empty string."""
+        prefix = getattr(self.config, "title_prefix", None)
+        if not prefix:
+            return ""
+        return f"{prefix} "
+
     def _can_use_feishu_collapsible(self) -> bool:
         """Return whether this notifier should render Feishu collapsible cards."""
         platform = getattr(self.config, "platform", "generic")
@@ -449,9 +456,9 @@ class WebhookNotifier:
                     "title": {
                         "tag": "plain_text",
                         "content": (
-                            f"Horizon {date} 折叠日报"
+                            f"{self._title_prefix()}Horizon {date} 折叠日报"
                             if lang == "zh"
-                            else f"Horizon {date} Collapsible Daily"
+                            else f"{self._title_prefix()}Horizon {date} Collapsible Daily"
                         ),
                     },
                     "template": "blue",
@@ -499,9 +506,9 @@ class WebhookNotifier:
                 {
                     **base_vars,
                     "message_title": (
-                        f"Horizon {date} 折叠日报"
+                        f"{self._title_prefix()}Horizon {date} 折叠日报"
                         if lang == "zh"
-                        else f"Horizon {date} Collapsible Daily"
+                        else f"{self._title_prefix()}Horizon {date} Collapsible Daily"
                     ),
                     "message_kind": "collapsible",
                     "summary": self._build_feishu_collapsible_overview(
