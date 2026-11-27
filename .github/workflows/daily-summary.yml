@@ -5,7 +5,7 @@ on:
     # GitHub 的 cron 一律按 UTC 解释。
     # 00:45 UTC = 08:45 北京时间（Asia/Shanghai, UTC+8），全年不变，不受夏令时影响。
     - cron: '45 0 * * *'
-  workflow_dispatch:      # 允许手动触发
+  workflow_dispatch:      # 允许在网页上手动触发
 
 # 同一时间只跑一个，避免上一次没跑完又叠一次
 concurrency:
@@ -16,8 +16,7 @@ jobs:
   daily-summary:
     runs-on: ubuntu-latest
     permissions:
-      contents: write     # 需要提交产物、推 gh-pages
-      actions: write      # 保活步骤需要重新启用 workflow 的权限
+      contents: write     # 提交产物、推 gh-pages 都需要
 
     steps:
       - name: Checkout code
@@ -41,20 +40,25 @@ jobs:
 
       - name: Run Horizon
         env:
-          # 这里的环境变量名必须和 data/config.github.json 里 ai.api_key_env 写的名字一致
+          # 这个变量名必须和 data/config.github.json 里 ai.api_key_env 的值完全一致
           TOKENPLUS_API_KEY: ${{ secrets.TOKENPLUS_API_KEY }}
           LWN_KEY: ${{ secrets.LWN_KEY }}
           HORIZON_WEBHOOK_URL: ${{ secrets.HORIZON_WEBHOOK_URL }}
         run: uv run horizon --hours 24
 
       - name: Set current date as environment variable
+        if: always()
         run: echo "DATE=$(TZ=Asia/Shanghai date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Commit summaries back (keep repository active)
+      # 保活：每天产生一次提交，让仓库保持"有活动"，
+      # 否则公开仓库 60 天无提交会被 GitHub 自动停掉定时任务。
+      # 即使上面的 Horizon 跑挂了也要执行，所以写 if: always()。
+      - name: Commit summaries back (keepalive)
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # 这两个路径被 .gitignore 忽略，必须 -f 强制加入
+          # 这两个路径被 .gitignore 忽略，必须用 -f 强制加入
           git add -f data/summaries docs/_posts || true
           if git diff --cached --quiet; then
             echo "今天没有新文件，提交一个空提交做保活"
@@ -65,6 +69,7 @@ jobs:
           git push origin HEAD:main
 
       - name: Deploy to GitHub Pages
+        if: always()
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -73,9 +78,3 @@ jobs:
           commit_message: "Daily Summary: ${{ env.DATE }}"
           publish_branch: gh-pages
           enable_jekyll: true
-
-      - name: Keepalive workflow
-        if: always()
-        uses: gautamkrishnar/keepalive-workflow@v2
-        with:
-          time_elapsed: '45'
