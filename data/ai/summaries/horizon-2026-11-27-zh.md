@@ -1,285 +1,255 @@
 # Horizon 每日速递 - 2026-11-27
 
-> 从 88 条内容中筛选出 12 条重要资讯。
+> 从 86 条内容中筛选出 12 条重要资讯。
 
 ---
 
 **AI 应用与 Agent**
-1. [腾讯开源 DFly2 复用目标 KV](#item-ai-apps-1) ⭐️ 8.0/10
-2. [Clay 重写 GTM Agent](#item-ai-apps-2) ⭐️ 7.0/10
-3. [llama.cpp AMD 跑分面板](#item-ai-apps-3) ⭐️ 6.0/10
+1. [腾讯开源 DFly2 投机解码](#item-ai-apps-1) ⭐️ 7.0/10
+2. [Clay 把 GTM Agent 改成 coding agent](#item-ai-apps-2) ⭐️ 7.0/10
+3. [GPT-6.2 额度缩水 40%](#item-ai-apps-3) ⭐️ 5.0/10
+4. [Sakana 发布 Namazu Small](#item-ai-apps-4) ⭐️ 5.0/10
+5. [Google Play 将公开商家地址](#item-ai-apps-5) ⭐️ 5.0/10
 
 **科技新闻**
-1. [Google Workspace MCP：Gmail 初期不能发邮件](#item-tech-news-1) ⭐️ 7.0/10
-2. [荷兰大臣反对美国 MATCH Act 限制 ASML 对华销售](#item-tech-news-2) ⭐️ 7.0/10
-3. [微软 CEO 承认应届生招聘放缓：先花完 AI 预算再招人](#item-tech-news-3) ⭐️ 7.0/10
+1. [Google Workspace MCP 服务器因 Gmail 发送限制受质疑](#item-tech-news-1) ⭐️ 7.0/10
+2. [黑五硬盘价格大涨，AI 存储需求挤压供应](#item-tech-news-2) ⭐️ 7.0/10
+3. [阿斯麦 CEO 反对全面断供，主张维持技术代差](#item-tech-news-3) ⭐️ 7.0/10
+4. [荷兰大臣反对美国 MATCH 法案限制 ASML 对华销售](#item-tech-news-4) ⭐️ 7.0/10
+5. [纳德拉承认微软应届生招聘放缓，称企业先耗尽 AI 预算再增人手](#item-tech-news-5) ⭐️ 7.0/10
+6. [蜜雪冰城 5 亿元入股 DeepSeek 千亿元级融资](#item-tech-news-6) ⭐️ 7.0/10
 
-**财经新闻**
-1. [国常会部署完善资本市场稳市机制，优化中央汇金类“平准基金”功能](#item-finance-news-1) ⭐️ 8.0/10
-2. [中国双 11 智能手机销量同比降 17%，苹果居首、华为增长](#item-finance-news-2) ⭐️ 7.0/10
-3. [蜜雪冰城 5 亿元入股 DeepSeek](#item-finance-news-3) ⭐️ 6.0/10
-4. [SpaceX 向美国儿童投资账户捐股，马斯克等额配捐](#item-finance-news-4) ⭐️ 4.0/10
-5. [美国国土安全部称 ICE 在感恩节前逮捕多名涉暴力与毒品犯罪人员](#item-finance-news-5) ⭐️ 3.0/10
-6. [节日问候：西方市场因感恩节休市，帖文征集黑五购物意向](#item-finance-news-6) ⭐️ 1.0/10
+**科技博客**
+1. [AI 检测之争，本质是把关权之争](#item-tech-blog-1) ⭐️ 8.0/10
 
 ---
 
 ## AI 应用与 Agent
 
 <a id="item-ai-apps-1"></a>
-### [腾讯开源 DFly2 复用目标 KV](https://www.marktechpost.com/2026/11/26/tencent-dfly2-speculative-decoding-sparse-models/) ⭐️ 8.0/10
+### [腾讯开源 DFly2 投机解码](https://www.marktechpost.com/2026/11/26/tencent-dfly2-speculative-decoding-sparse-models/) ⭐️ 7.0/10
 
-腾讯已开源 DFly2：一个 0.85B 参数、5 层的推测解码草稿模型，面向 DeepSeek-V4.1-Flash、GLM-5.3-Flash 和自家 Hy4 flash 这类原生稀疏模型。它不再单独维护草稿 KV cache，而是复用目标模型稀疏层的 latent KV 和 indexer 已选出的 top-k 位置，因此草稿阶段不需要 prefill，每个草稿 token 最多看约 2K 个 key。论文自报在 DeepSeek-V4.1-Flash 的 SWE 64K 场景、匹配单用户速度时吞吐最高提升 81%；最差是 Hy4 flash 通用任务在 temperature 0 下仅比 DSpark 高 3.9%。
+腾讯 Hunyuan AI Infra 团队开源了 DFly2：这是一个 0.85B 参数、5 层的投机解码 drafter，随 Hy4 flash 一起发布，代码在 GitHub 的 Tencent/AngelSpec 仓库，论文为 arXiv 2611.34776。它的核心做法是不保留自己的 KV cache：每个 draft 层读取目标模型对应稀疏注意力层的 latent KV，并且只在目标 indexer 已选出的 top-k 位置上做注意力。因此单个 draft token 最多 attend 约 2K 个 key，drafting 开销基本不随上下文长度增长，也完全跳过 prefill，只从目标模型多传 1 个 last-layer hidden state。官方论文称，在 DeepSeek-V4.1-Flash、GLM-5.3-Flash 和 Hy4 flash 三个目标模型、所有通用 benchmark 上，它的 draft 接受率都高于同配方训练的 DFlash 与 DSpark；DeepSeek-V4.1-Flash 的 SWE 64K 场景在同等单用户速度下吞吐最多提升 81%，最弱一档是 Hy4 flash 通用任务在温度 0 下只比 DSpark 高 3.9%。目前没有可直接安装的包，也没有标定版本的 vLLM 集成，官方仅给出在 NVIDIA H20 + vLLM + TP8（每实例张量并行 8）上的服务测试配置，Hy4 flash 的 vLLM recipe 默认使用 8x H200，属于“代码与论文已放出、部署细节待补”的状态。
 
 rss · MarkTechPost · 11月27日 03:31
 
-**「怎么用」** 第一步是从 GitHub 的 Tencent/AngelSpec 仓库取实现，确认目标模型在支持列表内，再按 vLLM 的 Hy4-flash recipe 起服务。接入方式不是改目标模型权重，而是把 drafter 的每个 draft 层与目标模型的稀疏注意力层配对，让它读同一份 latent KV 和 indexer 的 top-k 选择。没有多卡 serving 环境的话，先不要按单机脚本评估。
+**「上手路径」** 第一步是打开 GitHub 的 Tencent/AngelSpec 仓库，获取 drafter 权重与配套的推理集成代码，并结合 recipes.vllm.ai/tencent/Hy4-flash 上的 vLLM recipe 启动服务；目前没有 pip 包，也没有固定版本的 vLLM 镜像。硬件上，官方测试环境是 H20 上单实例 TP8（8 张 H20），Hy4 flash 的 recipe 默认使用 8x H200，因此需要多卡环境而不是单卡。接入时需要完成两件事：把 draft 层与目标模型的稀疏注意力层按层配对，并让 draft 复用该层的 KV 与 index；以及在采样端开启投机解码的验证流程。复现吞吐数字需要你自己按论文的 SWE 64K / CodeSpan 64K 场景跑 benchmark，文章未给出可直接照做的命令。
 
-**「成本与限制」** DFly2 开源代码本身不收费，成本主要在 GPU：论文测试用单实例 8×H20、TP8，Hy4 flash 的 vLLM recipe 默认 8×H200，单卡或小显存没有现成路径。它目前针对列表里的原生稀疏目标；“省掉草稿 cache”的具体账是，常规 3 层 drafter 会在 DeepSeek-V4.1-Flash 上每 token 多加 3.4 KiB（目标 KV 的 1.76 倍），GLM-5.3-Flash 加 3.0 KiB（1.26 倍），Hy4 flash 加 3.4 KiB（1.20 倍），32K 下同一显存池可多放 1.73 倍请求。
+**「成本与上限」** 官方没给出每百万 token 的价格，也没给复现步骤，能确定的只有硬件门槛：文章中的服务测试用的是 NVIDIA H20，每实例 TP8 跑 vLLM，而 Hy4 flash 的 vLLM recipe 默认配置是 8×H200。收益体现在显存占用上：常规 3 层 drafter 每 token 要多占 3.0–3.4 KiB 的 KV，相当于目标模型的 1.20x–1.76x（目标模型自身为 4.4–17.2 KiB/token）；DFly2 不保留这份 cache 后，32K 上下文下同一显存池可多容纳 1.73x 请求，且每个 draft token 最多只 attend 约 2K 个 key，因此上下文变长时 drafting 开销基本不涨。以上均为论文自报数据，文章未列出可安装的包或对应的 vLLM 集成版本，真实部署成本与延迟仍无公开数字。
 
-**「为什么现在」** 值得现在看，是因为代码、arXiv 论文和 vLLM recipe 已一起放出，能直接对照实现与 benchmark 条件，而不是停留在厂商口径。
+**「为什么现在」** 值得关注的原因在于“drafter 不再单独占 KV 内存”这个具体工程收益，而不是新模型能力：论文 Table 2 显示常规 3 层 drafter cache 会让每 token 的 KV 内存增加 1.20x（Hy4 flash，17.2 KiB → +3.4 KiB）到 1.76x（DeepSeek-V4.1-Flash，4.4 KiB → +3.4 KiB）。在 32K 上下文下去掉这块缓存，同一内存池能容纳 1.73x 的请求数。这一点对长上下文和 agent 服务直接相关，只不过现在拿到的是权重加论文，不是能立刻替换现有推理栈的产品。
 
-**标签**: `#开源项目`, `#成本优化`, `#工具实测`, `#能力边界`
+**标签**: `#模型发布`, `#开源项目`, `#成本优化`, `#能力边界`, `#工作流`
 
 ---
 
 <a id="item-ai-apps-2"></a>
-### [Clay 重写 GTM Agent](https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/) ⭐️ 7.0/10
+### [Clay 把 GTM Agent 改成 coding agent](https://latent.space/p/how-clay-builds-gtm-agents-jeff-barg-head-of-ai/) ⭐️ 7.0/10
 
-Clay 的 AI 负责人 Jeff Barg 在 Latent Space 访谈中说明，其 agent 产品 Sculptor 已从「一堆工具循环调用」重构成编码 Agent：跑在 Pi harness 上，在云沙箱里执行 Clay CLI，并新增 Audiences 数据层把 CRM 和 Gong 的记录对齐，让 agent 能同时看到两类数据。配套的 Clay Agent Plugin（CLI 与 API）已经发布，Claude Code 和 Codex 可以直接调用 Clay 的工具与 building blocks；Clay 自述其自有 agent 与外部 harness 的使用量已接近 50/50。成本方面，他给出的是口头估算而非实测：用 TypeSafe 的 Jev 分类器把库里约 4000 万家公司全部按 ICP 打一遍分约需 1500 美元，但 Jev 尚未进入生产环境。此外 Clay 即将上线自动模型路由，模型选择器仍会保留。
+Clay AI 负责人 Jeff Barg 在播客中披露，Clay 已把 2025 年 9 月上线的 Sculptor agent 从「工具循环 + 精心调优的系统提示」重建为 coding agent：跑在 Pi harness 上，在云沙箱中执行 Clay CLI，并新增 Audiences 数据层把 CRM 与 Gong 记录对齐，让 agent 能同时看到两边的数据。Barg 给出的核心理由是旧工具集太受限、agent 看不到 CRM 数据和活动结果，而现有 LLM 评审式 eval 漏掉了真实用法（分析表格、百万行企业表）。他同时给出量级参考：用 TypeSafe 的 Jev 分类器把 Clay 库中约 4000 万家公司全部按 ICP 打分约需 1500 美元，但 Jev 尚未进入生产。
 
 rss · Latent Space · 11月26日 23:02
 
-**「怎么用」** 如果只想在现有工作流里调用 Clay，按官方 changelog 安装 Clay Agent Plugin（CLI 与 API），然后在 Claude Code 或 Codex 里直接让它读写 Clay 的表和工具，不需要进入 Clay 界面。如果想自建同类系统，可参考的架构是：用 BullMQ 做 agent 任务队列，Postgres 与 ClickHouse 存产品数据，Snowflake 做分析，接入 LangSmith 看 trace，并自己实现请求限流和供应商限流时的暂停/恢复。
+**「怎么用」** 如果你在 Clay 里做线索筛选，入口是 Clay 的 Workflows 和 agent 面板；Clay 也提供 Clay Agent Plugin 的 CLI 与 API，可以让 Claude Code 或 Codex 直接调用 Clay 的工具和构建块，Barg 称目前 Clay 自有 agent 与外部 harness 的使用量已接近 50/50。想自建同类系统的话，Clay 的路径是用 BullMQ 跑 agent 任务、用 Postgres/ClickHouse 存产品数据、用 Snowflake 做分析，并在 provider 限流或宕机时暂停与恢复任务。
 
-**「成本与天花板」** 按 Jeff 的估算，全量 4000 万家公司做 ICP 分类约 1500 美元，计算依据是每家公司 LinkedIn 页面约 1000 token 加 ICP 描述约 500 token；他给出的合理获客预算是每条合格线索 1–10 美元、每次约到通话 10–100 美元。自建模型后训练的省钱门槛，他估计在推理支出达到 1000 万至 1 亿美元之间，低于这个量级省下的钱不足以抵消投入。已知失败模式包括：用户按行跑 agent，一张 5 万行的表会瞬间打满推理配额；模型会拿相同输入反复重试同一条 CLI 命令；agent 仍无法读长 trace 定位真正的出错步骤，只会标记耗时最长的那一步，所以 Clay 的技能大多是手写的。
+**「成本与天花板」** Barg 的估算：约 4000 万家公司、每家公司 LinkedIn 页约 1000 token 加 500 token 的 ICP 描述，全量分类约 1500 美元；他把合格线索的 enrichment 预算定在每条 1 到 10 美元，成交一通电话 10 到 100 美元。他称线索资格判定在 Clay 的 eval 上已接近满分约一年，过去一年内发布的多数模型都能查出公司最新融资轮；前沿模型的价值集中在深度调研和编排。规模化时的已知问题是按行跑 agent 会造成推理需求瞬间尖峰（例如 5 万行表），需要限流和公平调度；此外 agent 仍会重复用相同输入重试同一条 CLI 命令，也还不能可靠地阅读长 trace 定位失败步骤。
 
-**「真实反馈」** 以下均为受访者自述，没有第三方评测。Clay 内部的 GTM 团队习惯留在 Cursor，不肯搬走，这直接促成了 CLI 的诞生；其销售团队现在在 Codex 里做 deal prep，使用量在自有 agent 与外部 harness 之间接近五五开。Clay 也承认客户看到模型选择器会抱怨——他们没有精力为每个新模型重跑自己场景的评测，这正是自动路由要解决的问题。
+**「实际反馈」** Barg 自述 Clay 内部 GTM 团队坚持留在 Cursor，因此索要了 CLI，销售团队现在在 Codex 里做 deal prep；客户一开始对 Workflows 感到困惑甚至不满、要求拿回表格，现在代理机构用户接受度上升，多数 workflow 由 CLI 或 agent 生成。这些都是该厂商方的一面之词，没有第三方实测数据。
 
-**「为什么现在看」** 线索打分这类任务对模型已经商品化，Jeff 称 Clay 的评测分数大约一年没有实质性提升，所以真正的新东西只有两块：打通 CRM 与 Gong 的 Audiences 数据层，以及即将上线、按任务自动选模型的 router；把 agent 重写成编码 Agent 更像是把已有能力换了个壳。
+**「为什么现在看」** 新东西主要是架构层面的：coding agent + CLI 沙箱 + Audiences 数据层是已上线的重建，而自动模型路由只被描述为「即将上线」，Jev 分类器也还没进生产，所以成本数字目前只是纸上推算。
 
 **标签**: `#Agent框架`, `#成本优化`, `#工作流`, `#能力边界`
 
 ---
 
 <a id="item-ai-apps-3"></a>
-### [llama.cpp AMD 跑分面板](https://huggingface.co/blog/ggml-org/llamacpp-amd-bench) ⭐️ 6.0/10
+### [GPT-6.2 额度缩水 40%](https://the-decoder.com/gpt-6-2-astra-users-now-hit-limits-40-faster-after-openai-patched-a-pricing-error/) ⭐️ 5.0/10
 
-llama.cpp / ggml 团队在 Hugging Face 博客上线了一个面向 AMD Ryzen 与 Radeon 硬件的 benchmark 仪表盘，把 llama.cpp 在这两类 AMD 平台上的推理性能数据集中到一个公开页面。页面直接访问即可，不需要安装、订阅或 API key，主要服务打算用 AMD CPU 或显卡跑本地模型的用户。需要说明的是，目前可确认的只有公告本身：具体测了哪些模型、什么量化格式、多长 prompt、用的是 ROCm 还是 Vulkan 后端，以及 token/s 数字，均未在可见内容中给出，选型前仍需自行打开页面核对。
+OpenAI 修复了一个计费 bug：此前 GPT-6.2 的 Astra 和 Sol 档订阅用户拿到了并不正确的折扣。修复后，在相同用量下 Astra 用户触达用量上限的速度比上周快 40%，Sol 用户快 25%。作为补偿，订阅用户获得一次额外的额度重置，企业版用户到年底前可使用免费 Fast Mode；OpenAI 同时表示正在测试把 Chat 与 Work 模式合并。文章没有给出具体 token 数、价格数字，也没有说明哪些套餐受影响、影响幅度如何换算。
 
-rss · Hugging Face Blog · 11月26日 11:37
+rss · The Decoder · 11月26日 17:28
 
-**「怎么用」** 入口就是 Hugging Face 博客上的这个公开页面，打开浏览器即可查看，无任何前置条件。它是数据展示面板而不是可安装组件，llama.cpp 本身的获取方式不变：按发行版从源码编译，或取对应平台的预编译包。看的重点是与你计划部署的模型参数量、量化位数和 GPU 架构最接近的那几行——硬件档位不同的数据不能直接外推。
+**「怎么应对」** 不需要改任何配置或代码，这次改的是计量而不是接口。第一步是去用量面板确认自己落在 Astra 还是 Sol 档，然后按「快 40%」或「快 25%」重新估算每日可用轮次和批处理任务量。如果额度已经用尽，可以用补偿的那次额外重置继续；企业版用户可以切到 Fast Mode，年底前不计额外费用。
 
-**「成本与上限」** 这个面板本身免费公开，挂在 Hugging Face 上，不需要 API key 或订阅，因为它衡量的是你自己机器上的本地推理，花钱的地方是 AMD 硬件而不是调用计费。它按 llama.cpp 构建版本、模型和量化分别记录 prompt processing 与文本生成速度，但本条目所附材料里没有任何具体 token/s、延迟或显存占用的数值，实际天花板需要打开面板按你的 Ryzen/Radeon 型号和量化档位自行查表。
+**「钱与天花板」** OpenAI 没有公布新的 token 单价或额度数值，能确认的只有相对变化：在同样的使用量下，GPT-6.2 Astra 的用量上限会比上周提前 40% 到达，Sol 则提前 25%，ChatGPT 和 Codex 两边都受影响。补偿方式是 Go、Plus、Pro、Business 账户各获得一次 banked reset，也就是一次可以留到之后使用的额度重置；Business 用户到年底可以免费用 Fast Mode。官方没有说明各档位的具体 token 数额，也没有说明该修复具体影响哪些套餐层级。
 
-**「为什么现在看」** 这次没有新模型也没有新后端，价值在于把原本分散的 AMD 跑分整理成可横向对比的公开页面——对正在挑 Ryzen / Radeon 配置的人是省事，而不是新能力。
+**「为什么现在看」** 这并非新能力上线，只是把此前少算的费用补回来，所以上周的额度体感不能作为容量规划基准。
 
 <details><summary>参考链接</summary>
 <ul>
-<li><a href="https://huggingface.co/blog/ggml-org/llamacpp-amd-bench">Introducing the llama.cpp benchmark dashboard for AMD Ryzen ...</a></li>
-<li><a href="https://emergent.sh/news/llama-cpp-benchmark-dashboard-amd-ryzen">Llama.cpp Benchmark Dashboard for AMD Ryzen and Radeon</a></li>
-<li><a href="https://techplugged.com/llama-cpp-benchmark-dashboard-amd-ryzen-radeon/">ggml-org launches llama.cpp benchmark dashboard for AMD Ryzen ...</a></li>
+<li><a href="https://windowsreport.com/gpt-6-2-astra-users-now-hit-usage-limits-40-faster-after-openais-billing-error-fix/">GPT-6.2 Astra users now hit usage limits 40% faster after ...</a></li>
+<li><a href="https://tech.yahoo.com/ai/chatgpt/articles/chatgpts-gpt-6-2-honeymoon-115059332.html">ChatGPT&#x27;s GPT-6.2 honeymoon is over — OpenAI admits a billing ...</a></li>
+<li><a href="https://www.notebookcheck.net/ChatGPT-users-hit-limits-up-to-40-sooner-after-OpenAI-billing-fix.1460643.0.html">ChatGPT users hit limits up to 40% sooner after OpenAI ...</a></li>
 
 </ul>
 </details>
 
-**标签**: `#工具实测`, `#开源项目`, `#能力边界`, `#模型发布`
+**标签**: `#成本优化`, `#能力边界`
+
+---
+
+<a id="item-ai-apps-4"></a>
+### [Sakana 发布 Namazu Small](https://www.marktechpost.com/2026/11/26/sakana-ai-namazu-small-30b-nemotron-3-nano/) ⭐️ 5.0/10
+
+Sakana AI 于 11 月 26 日公布 Namazu Small：一个总参数 30B、激活参数 3B（30B-A3B）的推理模型，基于 NVIDIA Nemotron 3 Nano 的预训练基座（而非 NVIDIA 后训练版本）做继续预训练与自研后训练，定位是网页检索与长文档问答。官方自报的 25 项基准平均分为 60.1，高于 120B-A12B 的 Nemotron 3 Super（56.2）和 Nemotron 3 Nano（50.2）；其中 BrowseComp 73.5（Super 为 36.1）、DeepSearchQA 84.3、LLM-jp LongBench 86.0。但闭卷知识明显偏弱，SimpleQA Verified 仅 6.8（Nano 为 9.1，Super 为 18.1），日语 SimpleQA 8.0（Super 为 24.9）。权重、许可证、上下文长度、硬件要求与价格均未公布，Sakana 称本地部署细节将在 2026 年 12 月给出，因此目前还无法下载或调用。
+
+rss · MarkTechPost · 11月26日 22:06
+
+**「现在怎么接入」** 当前没有任何可直接使用的入口：权重未发布，也没有 API 或定价页，只有 Sakana 官网的公告与基准图表，因此无法安装、部署或切换。如果现在就需要类似能力，可行的近期路径是改用基座模型 Nemotron 3 Nano 的开放权重（Hugging Face 上可获取，NVIDIA 称支持最长 1M token 上下文，面向 DGX Spark、H100、B200），并自行做检索或长文档的提示工程；Namazu Small 的增量主要来自 Sakana 的后训练，这部分还没有对外提供。等待名单未提及，留意 12 月的本地部署公告是唯一动作。
+
+**「钱与天花板」** 定价完全未披露，无法估算单位 token 成本。已知能力上限来自官方自报数据：25 项基准中它只在 13 项上超过 120B 的 Super，闭卷知识（SimpleQA Verified 6.8、日语 SimpleQA 8.0）和医疗问答（HealthBench 40.6，低于 Nano 的 47.5）是明确短板，Sakana 自己也承认「仅依赖内部知识的任务提升不大」。上下文长度未公布，基座 Nemotron 3 Nano 标称最长 1M token，但 Namazu Small 是否保留该长度没有说明。所有分数均为厂商自报，评测脚本与复现材料未公开。
+
+**「为何现在关注」** 值得关注的是能力取向上的一次明确取舍——用 3B 激活参数在检索与长文档接地任务上压过 120B 模型，这对成本敏感的研究型 agent 有参考价值；但现在只是发布公告，权重与价格要等到 2026 年 12 月，还不能算可用的新工具。
+
+**标签**: `#模型发布`, `#能力边界`, `#开源项目`
+
+---
+
+<a id="item-ai-apps-5"></a>
+### [Google Play 将公开商家地址](https://thenextweb.com/news/google-play-developer-addresses-trader-dsa-worldwide) ⭐️ 5.0/10
+
+Google Play 要求开发者在 2027 年 2 月 1 日前向 Google 申报自己是否属于欧盟《数字服务法》（DSA）定义的「trader」（商家）。从 3 月 1 日起，被认定为商家的账号，其联系方式将在全球范围内展示；对以个人身份注册的账号来说，这意味着公开一个真实住址和电话号码。对比之下，Apple 只在欧盟范围内展示同类信息。这条规则对所有在 Google Play 上架应用的开发者生效，包括发布 AI 应用的独立开发者。
+
+rss · The Next Web · 11月26日 21:27
+
+**「怎么处理」** 入口在 Play Console 的开发者账号信息设置里，需要在 2027 年 2 月 1 日前完成 DSA 商家身份申报。如果不想公开家庭住址，就要考虑把个人账号改为组织或企业类型；但原文摘要在这里被截断，没有写明改账号类型的具体步骤、所需材料，也没有说明审核要多久，这部分需要直接向 Google 支持确认。申报本身没有给出任何 API、参数或代码层面的操作。
+
+**「为什么现在看」** 截止日期是明确的，而规避地址公开的唯一现实办法：变更账号类型并不是提交申请后就立刻生效，从发布时间算起能操作的窗口只有约两个月。
+
+**标签**: `#平台政策`, `#合规风险`, `#工作流`
 
 ---
 
 ## 科技新闻
 
 <a id="item-tech-news-1"></a>
-### [Google Workspace MCP：Gmail 初期不能发邮件](https://techstackups.com/articles/google-workspace-ai-agents-mcp/) ⭐️ 7.0/10
+### [Google Workspace MCP 服务器因 Gmail 发送限制受质疑](https://techstackups.com/articles/google-workspace-ai-agents-mcp/) ⭐️ 7.0/10
 
-据报道，Google 将为 Workspace 的 AI 代理提供 MCP 服务器，但 Gmail 集成在最初阶段不能发送邮件。报道把这一限制与人工确认、API 设计以及是否仅向合作伙伴开放等问题联系起来，但没有给出完整的服务器清单、上线时间或独立验证。社区评论中有人称 Gmail API 现已支持发送，并指出 MCP 的 elicitation 机制本可暂停工具调用并要求用户确认，因此限制发送功能更像是商业决策。
+Google 为 AI 智能体推出 Workspace MCP 服务器，使智能体可调用 Gmail、Docs 等 Workspace 能力。但报道称 Gmail 的 MCP 服务器不能发送邮件，这一限制成为主要争议点。评论者围绕该限制是否必要、是否已被更新的 API 能力推翻展开讨论，使 Gmail MCP 服务器当前的实际发送能力仍存疑。
 
 hackernews · ritzaco · 11月26日 09:44 · [社区讨论](https://news.ycombinator.com/item?id=50653477)
 
-**「背景」** MCP 是一套让 AI 代理通过统一接口调用外部工具和数据的协议。据该报道，Google 正把 Workspace 的各项服务封装成 MCP 服务器，供 AI 代理调用；其中 Gmail 服务器最初不支持发送邮件，这也成为讨论其权限控制与高风险操作限制的背景。
+**「背景」** MCP 是让 AI 应用以统一接口调用外部工具和数据的协议；Workspace MCP 服务器把 Gmail、Docs 等产品能力封装成智能体可调用的工具。发送邮件不同于读取数据，涉及用户授权、误发和审计等安全边界，因此发送类工具通常需要额外的确认或权限设计。
 
-**「接入代价与权限边界」** 对开发者来说，接入 Gmail MCP 服务器的前提，是先在 Google Cloud 中创建项目，并配置面向 AI agent 的 OAuth 2.0 客户端；授权范围直接决定 agent 能读取和搜索邮件、检索会话与标签，还是在条件允许时发信。因此团队在把 agent 接入收件箱前，应按最小权限原则收紧 scope，并把发信这类不可撤销操作单独纳入人工确认或额外门槛；工具结果也显示，早期报道中“不能发信”的说法可能已随文档更新而变化，实际能力应以当前官方配置指南为准。
+**「影响」** 对希望用智能体自动处理邮件的开发者来说，若 Gmail MCP 服务器不提供发送工具，他们可能需要改用 Gmail API 自行封装发送逻辑，或让智能体操作浏览器完成发信；前者增加集成工作，后者按评论说法更繁琐且更浪费资源。
 
-**「社区讨论」** 有评论认为，禁止 Gmail 发送只会促使用户让代理操作浏览器发信，过程更繁琐且浪费；另有评论指出，若用 MCP elicitation 在发送前要求用户确认，就不必把发送工具限定为合作伙伴专用。还有用户报告 Gmail API 现在已支持发送，并担心 API 转向按用量计费会限制代理式数据提取。
+**「社区讨论」** 评论者对限制的合理性看法不一：perdy 认为 MCP 的 elicitation 已能在工具调用前要求用户确认，因此把发送工具限定为合作伙伴更像商业决策，而非单纯安全考虑；Schnitz 则预计用户会改用浏览器自动化发信，流程更繁琐。bugthe0ry 贴出 Gmail API 参考文档称发送能力现已支持，并质疑文章所述限制是否已经过时。
 
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://chatforest.com/reviews/gmail-mcp-servers/">Gmail MCP Servers — Your Inbox Is Now an Agent ... — ChatForest</a></li>
-<li><a href="https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server">Configure the Gmail MCP server | Google for Developers</a></li>
-
-</ul>
-</details>
-
-**标签**: `#MCP`, `#Google Workspace`, `#AI agents`, `#Gmail API`, `#API design`
+**标签**: `#MCP`, `#AI agents`, `#Google Workspace`, `#Gmail API`, `#API design`
 
 ---
 
 <a id="item-tech-news-2"></a>
-### [荷兰大臣反对美国 MATCH Act 限制 ASML 对华销售](https://www.bloomberg.com/news/articles/2026-11-26/netherlands-plans-to-fight-rollout-of-proposed-us-curbs-on-asml) ⭐️ 7.0/10
+### [黑五硬盘价格大涨，AI 存储需求挤压供应](https://blog.ktz.me/black-friday-hard-drive-prices-are-messed-up/) ⭐️ 7.0/10
 
-荷兰外贸与发展合作大臣 Sjoerd Sjoerdsma 11 月 26 日在议会表示，荷兰不会接受美国进一步限制 ASML 对华销售，并明确反对 MATCH Act 的域外管辖效力，称荷兰“不会任人摆布”。荷兰正与欧盟委员会协调，并联合德国、法国展开游说，争取把该法案从美国年度国防政策法案中剔除。MATCH Act 由美国两党共同提出，要求荷兰、日本等盟友对华实施更严格的出口管制，否则美方将单方面限制其半导体设备出口；中国约占 ASML 今年销售额的 20%。据外界预计，国会将在 12 月中旬表决，通过的可能性很大。
+黑五期间硬盘价格大幅上涨，Hacker News 上的讨论还延伸到内存价格，并把涨价归因于 AI 驱动的存储需求。评论者认为，超大规模云厂商正在大量采购存储，而制造商因扩产资本开支高、又担心 AI 需求回落而不愿增加产能。该帖主要是市场观察和用户经历，不是厂商公告或独立测量的价格数据。
 
-telegram · zaihuapd · 11月26日 14:56
+hackernews · zdw · 11月27日 01:13 · [社区讨论](https://news.ycombinator.com/item?id=50661646)
 
-**「背景」** MATCH Act 是美国两党提出的法案，要求荷兰、日本等盟友对华实施更严格的半导体设备出口管制，否则美方将单方面限制相关设备；据 ioplus 11 月 18 日报道，荷兰政府已正式拒绝该法案，认为其域外管辖侵犯国家主权。11 月 26 日大臣在议会的表态是对这一立场的再次公开重申。另据 TrendForce 报道，该法案还可能影响已安装在中国工厂的设备维修和软件更新。
+**「背景」** 硬盘和内存制造属于资本密集型行业，厂商扩产需要高额前期投入；当 AI 数据中心运营商集中采购大容量存储时，短期供需容易失衡。评论者还指出，这类存储市场过去多次经历价格暴涨、随后产能释放和价格回落的周期，因此当前涨价更可能反映供需关系，而非厂商价格联盟。
 
-**「影响」** 如果这一结果成立，受影响的不只是 ASML 本身：按照法案设计，如果荷兰未按要求收紧对华管制，美国就会单方面限制荷兰半导体设备的出口，荷兰政府与企业因此需要在 12 月中旬表决前通过欧盟及德法渠道争取修改或删除相关条款。鉴于中国约占 ASML 今年销售额的 20%，这一营收敞口是荷兰方面评估让步成本的核心数字。
+**「影响」** 对需要自建存储或扩容集群的工程师和小型运营者来说，当前更现实的选择可能是提前囤货、推迟采购或降低容量目标；评论中的澳大利亚企业称已提前购买 20 组硬盘，但按现价最多再支撑约一年。
 
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://www.trendforce.com/news/2026/11/27/news-netherlands-opposes-match-acts-tighter-curbs-on-asmls-china-sales-eyes-eu-countermeasures/">[News] Netherlands Opposes MATCH Act’s Tighter Curbs on ASML ...</a></li>
-<li><a href="https://ioplus.nl/en/posts/dutch-reject-us-match-act-over-asml-export-controls">Dutch reject US MATCH act over ASML export controls</a></li>
+**「讨论」** 评论者对涨价原因看法不一：有人认为是超大规模厂商扫货造成的供需失衡，而非价格卡特尔；也有人预计存储的繁荣—萧条周期会在几年内再次压低每 GB 价格。还有用户引用 Tom&\#x27;s Hardware 的跟踪数据称 DDR5-6400 128GB 价格从 329 美元升至 3,145 美元，并提到黑五期间 32GB 内存迷你主机接近 500 美元。
 
-</ul>
-</details>
-
-**标签**: `#ASML`, `#export controls`, `#semiconductors`, `#Netherlands`, `#US-China tech`
+**标签**: `#hardware pricing`, `#storage`, `#AI infrastructure`, `#supply chain`, `#Hacker News`
 
 ---
 
 <a id="item-tech-news-3"></a>
-### [微软 CEO 承认应届生招聘放缓：先花完 AI 预算再招人](https://www.windowslatest.com/2026/11/27/lets-add-the-next-human-satya-nadella-admits-new-grad-hiring-slowed-as-companies-rebuild-around-ai-and-says-every-company-will-add-its-next-person-after-it-burns-through-its-ai-budget/) ⭐️ 7.0/10
+### [阿斯麦 CEO 反对全面断供，主张维持技术代差](https://www.semafor.com/article/11/25/2026/asml-makes-the-case-for-selling-chips-to-china) ⭐️ 7.0/10
 
-微软 CEO 萨提亚·纳德拉在 The Pragmatic Engineer 播客中承认，公司应届生招聘已经放缓，现在的做法是先把现有员工调配到合适岗位，之后才补招新人。他同时表示，AI 原生公司会“先用完 AI 预算，再招下一个人类”，并称未来每家公司都会如此。这一表态与微软的人数变化同时出现：截至今年 6 月 30 日，微软员工数为 22.3 万，一年减少 5000 人，为 2016 年以来首次年度下滑。帖文还引用 MIT 与微软研究院的一篇论文称，采用 GitHub Copilot 的企业季度技术岗招聘减少 29%，初级岗位受影响最大；上述数字与该论文结论均来自这篇聚合帖的转述，并非一手报道或独立复核。
+阿斯麦首席执行官富凯在 Semafor《Future Proof》节目中公开反对将中国完全排除在出口管制之外，认为这只会促使中国在自研上“加倍甚至三倍投入”。他表示，阿斯麦对华销售的光刻设备落后最先进制程十多年，维持这道技术代差反而能让中国继续依赖西方设备。美国正推动 MATCH 法案，拟把管制范围从 EUV 扩大到浸没式 DUV 和维护服务，荷兰政府和阿斯麦均表示反对。
+
+telegram · zaihuapd · 11月26日 12:19
+
+**「背景」** 光刻机是芯片制造的关键设备，阿斯麦在先进光刻设备领域占据主导地位。美国此前已限制 EUV 对华出口，MATCH 法案拟将限制进一步扩至浸没式 DUV 和维护服务。富凯称，近 30 年来阿斯麦在中国光刻机市场的份额接近 100%，中国因此接受了对其技术的依赖。
+
+**「影响」** 若 MATCH 法案通过，中国晶圆厂采购浸没式 DUV 及获得阿斯麦维护服务将面临新限制，既有设备的可用率和扩产安排会直接受到影响；阿斯麦的对华销售与服务收入也将承压。目前该法案仍在推动阶段。
+
+**标签**: `#半导体`, `#出口管制`, `#ASML`, `#光刻机`, `#中美科技竞争`
+
+---
+
+<a id="item-tech-news-4"></a>
+### [荷兰大臣反对美国 MATCH 法案限制 ASML 对华销售](https://www.bloomberg.com/news/articles/2026-11-26/netherlands-plans-to-fight-rollout-of-proposed-us-curbs-on-asml) ⭐️ 7.0/10
+
+荷兰外贸与发展合作大臣 Sjoerd Sjoerdsma 11 月 26 日在议会表示，荷兰不会接受美国进一步限制 ASML 对华销售，并反对拟议中的 MATCH Act 的域外管辖效力，称荷兰“不会任人摆布”。该法案由美国两党共同提出，要求荷兰、日本等盟友对华实施更严格的半导体设备出口管制，否则美方将单方面限制相关设备销售；荷兰正与欧盟委员会协调，并联合德国、法国游说，争取把该法案从美国年度国防政策法案中剔除。中国约占 ASML 今年销售额的 20%。外界预计美国国会 12 月中旬表决，通过的可能性很大；目前该措施仍是提案，尚未生效。
+
+telegram · zaihuapd · 11月26日 14:56
+
+**「背景」** 美国自 2022 年 10 月宣布对华半导体出口管制后，荷兰政府配合执行相关规则，已阻止 ASML 向中国出口最先进的设备（tool-1-2、tool-1-3）。此次争议的 MATCH Act 则试图把这种管制义务写入美国法律，要求荷兰、日本等盟友跟进，否则由美方单方面限制其设备出口——这正是荷兰方面主张不应由美国域外决定本国出口政策的原因（tool-1-1）。
+
+**「对 ASML 与荷兰供应链的具体影响」** 若 MATCH Act 按现有文本通过，受限范围将不止于新设备：现行规定已禁止 ASML 向中国出口最先进的 EUV 光刻机，而该法案的关键增量在于收紧转售与再出口管控，并以“盟友不跟进则美方单方面限制其半导体设备”的机制向荷兰、日本施压（tool-3-1、tool-3-3）。对 ASML 而言，中国约占其今年销售额的 20%，荷兰政府正是以这一销售冲击为由，联合欧盟委员会及德法在美国国会 12 月中旬表决前游说，力争把相关条款从年度国防政策法案中剔除（tool-3-2）。
+
+<details><summary>参考链接</summary>
+<ul>
+<li>Dutch lawmakers urge government to resist US MATCH bill targeting ASML</li>
+<li>US targets Chinese chipmaking with proposed export restrictions on ...</li>
+<li>Dutch Throttle Back ASML Exports, China Squawks.</li>
+<li><a href="https://overcentral.com/en/netherlands-opposes-match-act-asml-china/">Netherlands Opposes US Bill Restricting ASML Chip Sales to China</a></li>
+<li><a href="https://calgarytribune.com/asml-and-netherlands-lobby-us-congress-to-drop-match-act-curbs/">ASML and Netherlands Lobby US Congress to Drop MATCH Act Curbs</a></li>
+<li><a href="https://www.fool.com/investing/2026/04/24/the-match-act-could-blow-a-hole-in-asmls-revenue-h/">The MATCH Act Could Blow a Hole in ASML &#x27;s Revenue. Here&#x27;s What...</a></li>
+
+</ul>
+</details>
+
+**标签**: `#semiconductor export controls`, `#ASML`, `#US-Netherlands relations`, `#chip supply chain`, `#technology policy`
+
+---
+
+<a id="item-tech-news-5"></a>
+### [纳德拉承认微软应届生招聘放缓，称企业先耗尽 AI 预算再增人手](https://www.windowslatest.com/2026/11/27/lets-add-the-next-human-satya-nadella-admits-new-grad-hiring-slowed-as-companies-rebuild-around-ai-and-says-every-company-will-add-its-next-person-after-it-burns-through-its-ai-budget/) ⭐️ 7.0/10
+
+微软 CEO 萨提亚·纳德拉在 The Pragmatic Engineer 播客中承认应届生招聘已经放缓，称公司会先把现有员工调配到合适岗位，之后才补招新人；他还表示 AI 原生公司会“先用完 AI 预算，再招下一个人类”，并认为未来每家公司都会如此。纳德拉今年年初在达沃斯曾称自己“仍然相信校园招聘”，此番表态与之形成对照。据该转述，截至今年 6 月 30 日微软员工数为 22.3 万，一年减少 5000 人，是 2016 年以来首次年度下滑。报道还引用麻省理工学院与微软研究院的论文称，采用 GitHub Copilot 的企业季度技术岗招聘减少 29%，初级岗位受影响最大；上述内容来自 Telegram 频道的二次转述，未附研究原始数据与统计口径，具体结论仍需以原始论文为准。
 
 telegram · zaihuapd · 11月27日 03:03
 
-**「背景」** 纳德拉今年初在达沃斯还表示“仍然相信校园招聘”，因此这次在 The Pragmatic Engineer 播客上承认应届生招聘放缓，构成其公开口径的明显转变。微软截至 6 月 30 日的员工数为 22.3 万，较一年前减少 5000 人，这是 2016 年以来首次年度下滑，为上述表态提供了公司层面的背景。
+**「背景」** 纳德拉今年初在达沃斯还表示“仍然相信校园招聘”，这一表态与此次承认应届生招聘放缓形成直接对照。微软截至今年 6 月 30 日的员工总数为 22.3 万，一年减少 5000 人，为 2016 年以来首次年度下滑，为理解其招聘策略变化提供了背景。
 
-**「影响」** 对应届生和初级软件工程师而言，直接后果是入门岗位的开放节奏被推后：按纳德拉描述的顺序，微软只有在内部调配无法填补时才会对外补招，外部新人并非首选。帖文引用的研究进一步把技术岗招聘收缩的主要压力指向初级岗位，这意味着以校招为主要入口的求职者面临的空缺数量可能继续少于资深岗位。
+**「入门岗位入口收窄」** 对应届生和初级工程师来说，直接后果是入门级岗位变少：纳德拉描述的招聘顺序是先把现有员工调配到合适岗位、之后才补招新人，这意味着外部求职者还要与内部转岗者竞争同一批职位。来源引用的数据也指向同一方向：截至 6 月 30 日，微软员工总数为 22.3 万，一年减少 5000 人，是 2016 年以来首次年度下滑；MIT 与微软研究院的论文称，采用 GitHub Copilot 的企业季度技术岗招聘减少 29%，初级岗位受影响最大。这些数字来自二手转述的摘要，论文的方法与样本范围未被展开，因此“29%”应视为该研究在特定企业样本下的估计，而非整个行业的普遍幅度。
 
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://tsecurity.de/nl/4374116/podcasts-audio-briefings/lets-add-the-next-human-satya-nadella-admits-new-grad-hiring-slowed-as-companies-rebuild-around-ai-and-says-every-company-will-add-its-next-person-after-it-burns-through-its-ai-budget/">“Let’s add the next human”: Satya Nadella admits new-grad ...</a></li>
-
-</ul>
-</details>
-
-**标签**: `#AI labor impact`, `#Microsoft`, `#tech hiring`, `#GitHub Copilot`, `#software engineering careers`
+**标签**: `#AI labor impact`, `#Microsoft`, `#entry-level hiring`, `#GitHub Copilot`, `#tech industry`
 
 ---
 
-## 财经新闻
+<a id="item-tech-news-6"></a>
+### [蜜雪冰城 5 亿元入股 DeepSeek 千亿元级融资](https://m.sohu.com/a/1107027659_115479) ⭐️ 7.0/10
 
-<a id="item-finance-news-1"></a>
-### [国常会部署完善资本市场稳市机制，优化中央汇金类“平准基金”功能](https://www.tmtpost.com/nictation/8220182.html) ⭐️ 8.0/10
-
-国务院总理李强 11 月 27 日主持召开国务院常务会议，会议要求持续完善资本市场稳市机制，加力发挥“国家队”稳市作用，进一步优化中央汇金公司的类“平准基金”功能并提供充足流动性保障，同时完善保险、企业年金、社保基金等中长期资金入市的引导支持政策。会议还提出推动上市公司加大分红回购力度、依法强化资本市场全链条监管，但未公布具体规模、工具安排或时间表。
-
-telegram · zaihuapd · 11月27日 05:35
-
-**「背景」** 中央汇金公司增持 ETF 此前被市场解读为“中国版平准基金”入场稳市（tool-1-3）；“国家队”指这类在必要时入场提供流动性的国有资金力量。
-
-**「影响」** 若相关机制落地，中央汇金通过增持股票 ETF 等方式稳市的操作可能更常态化，直接影响持有 A 股 ETF 的投资者；保险、企业年金、社保基金等中长期资金的入市节奏也可能随之加快。
-
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://c.m.163.com/news/a/JSK3C1QH05198CJN.html">“ 中 国 版 平 准 基 金 ”横空出世， 稳 定 市 场将如何发挥作用？ 央 行最新表态</a></li>
-<li><a href="https://h5.ifeng.com/c/vivoArticle/v0023sNtM7OKWKId-_ACcAnlZw7Iiz72Ri55n5RHXyKXkyAQ__?isNews=1&amp;showComments=0">信号明确！ 国家队1.28万亿 持 仓动向公开，透露A股哪些深远布局</a></li>
-<li><a href="https://www.tkfunds.com.cn/contents/2025/4/21-90425635b8f14babbd8ba24aabd68994.html">多维发力 稳 市 机制建设步 入 新阶段 - 泰康基 金 官方网站</a></li>
-
-</ul>
-</details>
-
-**标签**: `#中国资本市场`, `#国务院常务会议`, `#中央汇金`, `#平准基金`, `#中长期资金入市`
-
----
-
-<a id="item-finance-news-2"></a>
-### [中国双 11 智能手机销量同比降 17%，苹果居首、华为增长](https://counterpointresearch.com/en/insights/china-double-11-smartphone-sales-drop-17-percent-on-weak-demand) ⭐️ 7.0/10
-
-Counterpoint Research 数据显示，2026 年 10 月 12 日至 11 月 13 日双 11 促销期，中国智能手机销量同比下降 17%；苹果销量同比下降 8%但仍居第一，华为是唯一增长的主要厂商，销量同比增长 29%。
-
-telegram · zaihuapd · 11月26日 09:38
-
-**「背景」** 双 11 是中国年度电商促销季；Counterpoint Research 称，品牌折扣、优惠券和以旧换新补贴未能抵消组件成本上涨导致的涨价影响。
-
-**「影响」** Counterpoint Research 调查还显示，81%计划半年内购机的中国消费者注意到涨价，更倾向推迟换机而不是接受更高价格，部分换新需求可能因此延后。
-
-**标签**: `#China smartphone market`, `#Double 11 sales`, `#Apple`, `#Huawei`, `#consumer demand`
-
----
-
-<a id="item-finance-news-3"></a>
-### [蜜雪冰城 5 亿元入股 DeepSeek](https://m.sohu.com/a/1107027659_115479) ⭐️ 6.0/10
-
-据搜狐网报道，DeepSeek 完成第二轮融资，规模约 1000 亿至 1055 亿元，投后估值约 6155 亿元；蜜雪冰城股份有限公司通过砺思资本管理的天津砺思星深基金认缴 5 亿元，该报道未获相关公司官方确认。作为参照，蜜雪集团 2025 年营收 335.6 亿元、归母净利约 58.9 亿元。
+据搜狐网报道，DeepSeek 已完成第二轮融资，规模约 1000 亿至 1055 亿元，投后估值约 6155 亿元；新增 31 家出资人，包括腾讯、宁德时代、中国移动、vivo，蜜雪冰城股份有限公司认缴 5 亿元。报道称，蜜雪冰城这 5 亿元通过天津砺思星深基金投入，该基金由砺思资本管理，备案时募资 26.4 亿元，后扩募至 75.2 亿元关账。上述融资规模、估值和出资方信息均来自该报道，尚无独立验证。
 
 telegram · zaihuapd · 11月27日 06:33
 
-**「背景」** 据媒体援引《The Information》报道，DeepSeek 已于 2026 年 6 月完成约 510 亿元人民币的首轮融资，因此本次约千亿元融资被报道为第二轮。
+**「背景」** 据 IT 之家援引《The Information》报道，DeepSeek 今年 6 月已完成约 510 亿元的首轮融资；此后第二轮融资目标几经调整，最初设为 500 亿元，随后上调至约 1000 亿元。观察者网援引企查查信息称，本轮共募集 1055 亿元，投后估值 6155 亿元，再度刷新中国 AI 行业单轮融资规模纪录。
+
+**「对开发者的影响」** 对开发者和企业客户而言，目前披露的信息仅涉及资本结构，未说明资金将用于算力、模型研发或产品定价，因此融资消息本身不构成 DeepSeek 服务能力或接口兼容性的可验证变化。
 
 <details><summary>参考链接</summary>
 <ul>
-<li><a href="https://www.ithome.com/1/020/251.htm">曝 DeepSeek 第 二 轮 融 资 1055 亿 元 ： 估 值 6155 亿 元 ， vivo ...</a></li>
+<li><a href="https://www.ithome.com/1/020/251.htm">曝 DeepSeek 第 二 轮 融 资 1055 亿 元： 估 值 6155 亿 元，vivo...</a></li>
+<li><a href="https://www.guancha.cn/CaiJing/2026_11_19_909123.shtml">31名股东排队参 投 ， DeepSeek 最新 估 值 超6000 亿</a></li>
 
 </ul>
 </details>
 
-**标签**: `#DeepSeek`, `#蜜雪冰城`, `#融资`, `#AI`, `#风险投资`
+**标签**: `#DeepSeek`, `#AI 融资`, `#中国 AI`, `#科技产业`, `#投资`
 
 ---
 
-<a id="item-finance-news-4"></a>
-### [SpaceX 向美国儿童投资账户捐股，马斯克等额配捐](https://ir.spacex.com/updates/releases-details/2026/SpaceX-to-Invest-in-the-Next-Generation-of-Americans-2026-r_LYQ5cH94/default.aspx) ⭐️ 4.0/10
+## 科技博客
 
-SpaceX 宣布将向每个当前有效的 Trump Account（帮助美国儿童积累长期储蓄的税收优惠投资账户）捐出一股新发行的 A 类普通股；马斯克称将按公司捐出的股数等额配捐，使每个孩子共获得两股。SpaceX 总裁兼 COO 格温·肖特韦尔另行宣布个人捐赠超过 200 万股 SpaceX 股票。
+<a id="item-tech-blog-1"></a>
+### [AI 检测之争，本质是把关权之争](https://seangoedecke.com/who-gets-to-decide-if-something-is-written-by-ai/) ⭐️ 8.0/10
 
-telegram · zaihuapd · 11月26日 08:31
+rss · Sean Goedecke · 11月27日 00:00
 
-**「背景」** Trump Account 是依据《One Big Beautiful Bill Act》设立、于 2026 年 7 月 4 日推出的儿童税收优惠投资账户，用于帮助美国儿童积累长期储蓄。
+**「背景」** 围绕作品、稿件或推文是否由 AI 生成的争议几乎每天都在发生。作者认为，反 AI 群体对 Pangram 等检测工具的反感，不能只归结为准确率或使用伦理，背后还有一个更基本的问题。
 
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://www.sofi.com/learn/content/trump-accounts-for-kids/">Trump Savings Accounts for Kids: Rules &amp; Eligibility (2026)</a></li>
+**「方案」** 在作者看来，真正的问题是“谁有权判定一段文字由 AI 写成”，也就是谁掌握决定文学奖归属、学生是否及格、谁能进入公共讨论的把关权。反 AI 者不愿让 Pangram 成为裁判，是因为它仍属于他们所警惕的科技行业；推而广之，他们也反对用工具化流程取代社区判断。作者同情这种权力视角，却认为唯一的替代方案——社区自律——更糟：不用 AI 的人往往不熟悉 AI 文本特征，容易把明显的 AI 痕迹当成人类写作，或把冗长礼貌的人类文本判成 AI，作者甚至断言他们会“更经常判错”。事后调查同样不可靠，熟练的 AI 写作可以生成草稿、同期对话等“真实写作”的全部痕迹。因此作者支持检测工具，并建议不信任公司的人推动开源方案或由政府自建检测平台；若把判定权交给社区，结果只会是更多 AI 写作文本进入文学与文化空间。作者也承认，部分论证是诊断性的，甚至带有直觉成分。
 
-</ul>
-</details>
+**「启示」** 作者的核心结论是：AI 检测争议首先是制度信任与权力归属问题，而不是单纯的工具精度问题；拒绝检测工具并不会阻止 AI 写作，反而可能把把关权交给更不擅长判断的社区。
 
-**标签**: `#SpaceX`, `#charitable donation`, `#children&\#x27;s investment accounts`, `#equity`, `#telegram`
-
----
-
-<a id="item-finance-news-5"></a>
-### [美国国土安全部称 ICE 在感恩节前逮捕多名涉暴力与毒品犯罪人员](https://x.com/DHSgov/status/2125673655594090926) ⭐️ 3.0/10
-
-美国国土安全部（DHS）在社交平台 X 上称，移民及海关执法局（ICE）于 11 月 24 日、感恩节前一日逮捕了恋童癖者、强奸犯和毒贩等“公共安全威胁”人员。该帖未公布被捕人数、具体个案或指控细节，相关说法也未获独立核实。
-
-telegram · zaihuapd · 11月26日 14:25
-
-**「背景」** 美国国土安全部于 11 月 25 日发布新闻稿，部长马克韦恩·马林（Markwayne Mullin）在稿中重复了这一说法，并称尽管主张“庇护”政策的政客不断指责，ICE 仍在逮捕并遣返有犯罪记录的无证移民。此类以“最恶劣中的最恶劣”（worst of the worst）为标题的逮捕汇总稿并非首次出现，例如 11 月 6 日也发布过一篇类似稿件。
-
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://www.dhs.gov/news/2026/11/25/worst-worst-ice-arrests-pedophiles-rapists-and-drug-dealers">WORST OF THE WORST: ICE Arrests Pedophiles, Rapists, and Drug ...</a></li>
-<li><a href="https://www.dhs.gov/news/2026/11/06/worst-worst-ice-arrests-pedophiles-sexual-assailants-and-drug-traffickers">WORST OF THE WORST: ICE Arrests Pedophiles, Sexual Assailants ...</a></li>
-
-</ul>
-</details>
-
-**标签**: `#immigration enforcement`, `#DHS/ICE`, `#social-media report`, `#US policy`, `#unverified`
-
----
-
-<a id="item-finance-news-6"></a>
-### [节日问候：西方市场因感恩节休市，帖文征集黑五购物意向](https://telegram.me/zaihuapd/45398) ⭐️ 1.0/10
-
-该帖为感恩节问候，指出当天西方放假、稿件不多，并询问读者在黑五（感恩节后的促销日）有什么想入手的商品、哪家活动值得关注；帖文本身未包含任何公司、政策或市场数据方面的实质新闻。
-
-telegram · zaihuapd · 11月27日 04:37
-
-**「背景」** 美国股市在感恩节当天（2026 年 11 月 26 日）休市，纽交所和纳斯达克均暂停交易，债市同样休市；次日“黑色星期五”（11 月 27 日）恢复交易但提前收盘。感恩节后的“黑五”也是美国零售促销的传统起点。
-
-<details><summary>参考链接</summary>
-<ul>
-<li><a href="https://www.naplesnews.com/story/news/2026/11/25/stock-markets-schedule-thanksgiving-black-friday/92938770007/">Are stock markets closed on Thanksgiving, Black Friday? All ...</a></li>
-<li><a href="https://economictimes.indiatimes.com/world/us/is-the-us-stock-market-open-on-thanksgiving-and-black-friday-2026-nyse-nasdaq-and-bond-market-hours-closures-and-early-trading-schedule/articleshow/136128926.cms">US stock market Thanksgiving and Black Friday hours: Is the ...</a></li>
-
-</ul>
-</details>
-
-**标签**: `#holiday market closure`, `#Black Friday`, `#retail promotions`, `#non-news`
+**标签**: `#AI detection`, `#power and institutions`, `#community moderation`, `#trust in tooling`, `#writing authenticity`
 
 ---
 
