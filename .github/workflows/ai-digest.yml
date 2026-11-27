@@ -46,6 +46,12 @@ jobs:
           WEBHOOK_URL: ${{ secrets.HORIZON_WEBHOOK_URL }}
 
       # AI 源更新频率低，用 24 小时窗口才够 10-15 条
+      # 频道标识交给 Horizon 自己写进文件名和标题，避免多个 workflow 同日互相覆盖
+      - name: Set channel identity
+        run: |
+          echo "HORIZON_POST_SLUG=ai-$(TZ=Asia/Shanghai date +'%H%M')" >> $GITHUB_ENV
+          echo "HORIZON_POST_TITLE=AI 应用与 Agent" >> $GITHUB_ENV
+
       - name: Run Horizon (AI)
         env:
           TOKENPLUS_API_KEY: ${{ secrets.TOKENPLUS_API_KEY }}
@@ -56,22 +62,6 @@ jobs:
         run: |
           echo "DATE=$(TZ=Asia/Shanghai date +'%Y-%m-%d')" >> $GITHUB_ENV
           echo "SLOT=$(TZ=Asia/Shanghai date +'%H%M')" >> $GITHUB_ENV
-
-      - name: Rename posts to avoid collision
-        if: always()
-        run: |
-          cd docs/_posts 2>/dev/null || exit 0
-          # Horizon 固定写 YYYY-MM-DD-summary-zh.md，同一天多个 workflow 会互相覆盖。
-          # 改成 YYYY-MM-DD-ai-HHMM-summary-zh.md（日期前缀必须保留，Jekyll 靠它识别）。
-          # 同时改写 front matter 的 title，让首页能区分是哪个频道的日报。
-          for f in ${DATE}-summary-*.md; do
-            [ -e "$f" ] || continue
-            lang="${f##*-summary-}"
-            new="${DATE}-ai-${SLOT}-summary-${lang}"
-            mv "$f" "$new"
-            sed -i "s|^title: .*|title: \"AI 应用与 Agent ${DATE} ${SLOT}\"|" "$new"
-          done
-          ls -1
 
       - name: Commit summaries back (keepalive)
         if: always()
