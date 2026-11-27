@@ -116,10 +116,11 @@
       },
       {
         "name": "LWN.net",
-        "url": "https://lwn.net/headlines/full_text?key=${LWN_KEY}",
-        "enabled": false,
-        "category": "linux-kernel",
-        "profile": "tech-news"
+        "url": "https://lwn.net/headlines/rss",
+        "enabled": true,
+        "category": "linux",
+        "profile": "tech-news",
+        "content_extractor": "trafilatura"
       }
     ],
     "reddit": {
