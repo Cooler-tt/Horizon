@@ -534,6 +534,9 @@ class WebhookConfig(BaseModel):
     languages: Optional[List[str]] = (
         None  # Optional language filter for webhook delivery; defaults to all AI languages
     )
+    title_prefix: Optional[str] = (
+        None  # Prefix for card/message titles, e.g. "BTC" -> "BTC Horizon 2026-11-27 折叠日报"
+    )
     enabled: bool = False
 
 
