@@ -18,7 +18,7 @@
     "default_profile": "crypto-btc",
     "profile_settings": {
       "crypto-btc": {
-        "threshold": 6.0,
+        "threshold": 5.0,
         "topic_dedup": true
       },
       "tech-news": {
@@ -119,7 +119,7 @@
       }
     ],
     "reddit": {
-      "enabled": true,
+      "enabled": false,
       "subreddits": [
         {
           "subreddit": "Bitcoin",
