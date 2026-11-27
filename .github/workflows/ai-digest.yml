@@ -1,0 +1,103 @@
+name: AI Digest
+
+on:
+  schedule:
+    # 北京时间 = UTC+8。00:55 UTC = 08:55 北京　｜　11:25 UTC = 19:25 北京
+    - cron: '55 0 * * *'
+    - cron: '25 11 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ai-digest
+  cancel-in-progress: false
+
+jobs:
+  ai-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.26"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Export optional secrets
+        run: |
+          if [ -n "${WEBHOOK_URL:-}" ]; then
+            echo "HORIZON_WEBHOOK_URL=${WEBHOOK_URL}" >> $GITHUB_ENV
+            echo "已注入飞书 Webhook 地址"
+          else
+            echo "未配置 HORIZON_WEBHOOK_URL，本次不推送"
+          fi
+        env:
+          WEBHOOK_URL: ${{ secrets.HORIZON_WEBHOOK_URL }}
+
+      # AI 源更新频率低，用 24 小时窗口才够 10-15 条
+      - name: Run Horizon (AI)
+        env:
+          TOKENPLUS_API_KEY: ${{ secrets.TOKENPLUS_API_KEY }}
+        run: uv run horizon --hours 24 --data-dir data/ai --config data/config.ai.json
+
+      - name: Set current date as environment variable
+        if: always()
+        run: |
+          echo "DATE=$(TZ=Asia/Shanghai date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "SLOT=$(TZ=Asia/Shanghai date +'%H%M')" >> $GITHUB_ENV
+
+      - name: Rename posts to avoid collision
+        if: always()
+        run: |
+          cd docs/_posts 2>/dev/null || exit 0
+          # Horizon 固定写 YYYY-MM-DD-summary-zh.md，同一天多个 workflow 会互相覆盖。
+          # 改成 YYYY-MM-DD-ai-HHMM-summary-zh.md（日期前缀必须保留，Jekyll 靠它识别）。
+          # 同时改写 front matter 的 title，让首页能区分是哪个频道的日报。
+          for f in ${DATE}-summary-*.md; do
+            [ -e "$f" ] || continue
+            lang="${f##*-summary-}"
+            new="${DATE}-ai-${SLOT}-summary-${lang}"
+            mv "$f" "$new"
+            sed -i "s|^title: .*|title: \"AI 应用与 Agent ${DATE} ${SLOT}\"|" "$new"
+          done
+          ls -1
+
+      - name: Commit summaries back (keepalive)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f data/ai/summaries docs/_posts || true
+          if git diff --cached --quiet; then
+            git commit --allow-empty -m "chore(keepalive ai): ${DATE} ${SLOT}"
+          else
+            git commit -m "docs(ai): ${DATE} ${SLOT}"
+          fi
+          # 两个 workflow 交替跑，可能撞上并发提交，用 rebase 重试避免非快进
+          for i in 1 2 3; do
+            git push origin HEAD:main && break
+            echo "push 失败，拉取后重试 #$i"
+            git pull --rebase --autostash origin main || true
+          done
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          keep_files: true
+          commit_message: "AI digest: ${{ env.DATE }} ${{ env.SLOT }}"
+          publish_branch: gh-pages
+          enable_jekyll: true

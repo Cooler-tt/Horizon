@@ -1,0 +1,107 @@
+name: BTC Digest
+
+on:
+  schedule:
+    # GitHub cron 一律 UTC。北京时间 = UTC+8，全年不变。
+    # 00:45 UTC = 08:45 北京　｜　11:15 UTC = 19:15 北京
+    - cron: '45 0 * * *'
+    - cron: '15 11 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: btc-digest
+  cancel-in-progress: false
+
+jobs:
+  btc-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.26"
+
+      - name: Install dependencies
+        run: uv sync
+
+      # GitHub 对不存在的 Secret 注入空字符串而非不注入，Horizon 见到空值会抛错。
+      - name: Export optional secrets
+        run: |
+          if [ -n "${WEBHOOK_URL:-}" ]; then
+            echo "HORIZON_WEBHOOK_URL=${WEBHOOK_URL}" >> $GITHUB_ENV
+            echo "已注入飞书 Webhook 地址"
+          else
+            echo "未配置 HORIZON_WEBHOOK_URL，本次不推送"
+          fi
+        env:
+          WEBHOOK_URL: ${{ secrets.HORIZON_WEBHOOK_URL }}
+
+      # 用独立的 data 目录，和各路日报的 summaries 互不覆盖
+      - name: Run Horizon (BTC)
+        env:
+          TOKENPLUS_API_KEY: ${{ secrets.TOKENPLUS_API_KEY }}
+        run: uv run horizon --hours 12 --data-dir data/btc --config data/config.btc.json
+
+      - name: Set current date as environment variable
+        if: always()
+        run: |
+          echo "DATE=$(TZ=Asia/Shanghai date +'%Y-%m-%d')" >> $GITHUB_ENV
+          echo "SLOT=$(TZ=Asia/Shanghai date +'%H%M')" >> $GITHUB_ENV
+
+      # docs/_posts 的文件名由代码固定为 YYYY-MM-DD-summary-zh.md，
+      # 两次运行会同名覆盖，所以这里重命名带上 btc 前缀。
+      - name: Rename posts to avoid collision
+        if: always()
+        run: |
+          cd docs/_posts 2>/dev/null || exit 0
+          # Horizon 固定写 YYYY-MM-DD-summary-zh.md，同一天多个 workflow 会互相覆盖。
+          # 改成 YYYY-MM-DD-btc-HHMM-summary-zh.md（日期前缀必须保留，Jekyll 靠它识别）。
+          # 同时改写 front matter 的 title，让首页能区分是哪个频道的日报。
+          for f in ${DATE}-summary-*.md; do
+            [ -e "$f" ] || continue
+            lang="${f##*-summary-}"
+            new="${DATE}-btc-${SLOT}-summary-${lang}"
+            mv "$f" "$new"
+            sed -i "s|^title: .*|title: \"BTC 市场雷达 ${DATE} ${SLOT}\"|" "$new"
+          done
+          ls -1
+
+      - name: Commit summaries back (keepalive)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f data/btc/summaries docs/_posts || true
+          if git diff --cached --quiet; then
+            git commit --allow-empty -m "chore(keepalive btc): ${DATE} ${SLOT}"
+          else
+            git commit -m "docs(btc): ${DATE} ${SLOT}"
+          fi
+          # 两个 workflow 交替跑，可能撞上并发提交，用 rebase 重试避免非快进
+          for i in 1 2 3; do
+            git push origin HEAD:main && break
+            echo "push 失败，拉取后重试 #$i"
+            git pull --rebase --autostash origin main || true
+          done
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          keep_files: true
+          commit_message: "BTC digest: ${{ env.DATE }} ${{ env.SLOT }}"
+          publish_branch: gh-pages
+          enable_jekyll: true
