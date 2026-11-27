@@ -47,7 +47,6 @@ jobs:
         env:
           WEBHOOK_URL: ${{ secrets.HORIZON_WEBHOOK_URL }}
 
-      # 用独立的 data 目录，和各路日报的 summaries 互不覆盖
       # 频道标识交给 Horizon 自己写进文件名和标题，避免多个 workflow 同日互相覆盖
       - name: Set channel identity
         run: |
@@ -59,14 +58,13 @@ jobs:
           TOKENPLUS_API_KEY: ${{ secrets.TOKENPLUS_API_KEY }}
         run: uv run horizon --hours 12 --data-dir data/btc --config data/config.btc.json
 
+      # 用独立的 data 目录，和别的频道的 summaries 互不覆盖
       - name: Set current date as environment variable
         if: always()
         run: |
           echo "DATE=$(TZ=Asia/Shanghai date +'%Y-%m-%d')" >> $GITHUB_ENV
           echo "SLOT=$(TZ=Asia/Shanghai date +'%H%M')" >> $GITHUB_ENV
 
-      # docs/_posts 的文件名由代码固定为 YYYY-MM-DD-summary-zh.md，
-      # 两次运行会同名覆盖，所以这里重命名带上 btc 前缀。
       - name: Commit summaries back (keepalive)
         if: always()
         run: |
