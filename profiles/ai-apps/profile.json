@@ -1,0 +1,49 @@
+{
+  "id": "ai-apps",
+  "name": "AI Apps & Agents",
+  "display_names": {
+    "zh": "AI 应用与 Agent"
+  },
+  "match": "match.md",
+  "analysis": "analysis.md",
+  "content": {
+    "analysis_max_chars": 8000,
+    "enrichment_max_chars": 16000,
+    "sampling": "prefix"
+  },
+  "enrichment": {
+    "prompt": "enrichment.md",
+    "blocks": [
+      {
+        "id": "summary",
+        "type": "section",
+        "tools": [],
+        "primary": true
+      },
+      {
+        "id": "how_to_use",
+        "type": "section",
+        "tools": [],
+        "optional": true
+      },
+      {
+        "id": "cost_and_limits",
+        "type": "section",
+        "tools": ["web_search"],
+        "optional": true
+      },
+      {
+        "id": "real_world_signal",
+        "type": "section",
+        "tools": [],
+        "optional": true
+      },
+      {
+        "id": "why_now",
+        "type": "section",
+        "tools": [],
+        "optional": true
+      }
+    ]
+  }
+}
